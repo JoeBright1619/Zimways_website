@@ -6,7 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
+import auca.ac.rw.food.delivery.management.model.enums.ItemCategory;
 import java.util.Optional;
 import java.util.List;
 
@@ -27,11 +27,18 @@ return categories.isEmpty()
         : ResponseEntity.ok(categories);
      }
 
-    @GetMapping("/{name}")
-    public ResponseEntity<Category> getCategoryByName(@PathVariable String name) {
-        Optional<Category> category = categoryService.getCategoryByName(name);
-        return category.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).build());
+   @GetMapping("/{name}")
+public ResponseEntity<Category> getCategoryByName(@PathVariable String name) {
+    try {
+        ItemCategory categoryEnum = ItemCategory.valueOf(name.toUpperCase());
+        Optional<Category> category = categoryService.getCategoryByName(categoryEnum);
+        return category.map(ResponseEntity::ok)
+                       .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).build());
+    } catch (IllegalArgumentException e) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
     }
+}
+
 
     // Save a new category or update an existing category
     @PostMapping
@@ -43,7 +50,7 @@ return categories.isEmpty()
     // Delete category by name
     @DeleteMapping("/{name}")
     public ResponseEntity<Void> deleteCategoryByName(@PathVariable String name) {
-        categoryService.deleteCategoryByName(name);
+        categoryService.deleteCategoryByName(ItemCategory.valueOf(name.toUpperCase()));
         return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
     }
 }

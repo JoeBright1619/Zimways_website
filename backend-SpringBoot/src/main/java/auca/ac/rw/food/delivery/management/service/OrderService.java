@@ -1,5 +1,7 @@
 package auca.ac.rw.food.delivery.management.service;
 
+import auca.ac.rw.food.delivery.management.model.Cart;
+import auca.ac.rw.food.delivery.management.model.CartItem;
 import auca.ac.rw.food.delivery.management.model.Customer;
 import auca.ac.rw.food.delivery.management.model.DeliveryDriver;
 import auca.ac.rw.food.delivery.management.model.Order;
@@ -17,25 +19,56 @@ public class OrderService {
 
     private final OrderRepository orderRepository;
     private final CustomerRepository customerRepository;
+    private final CartRepository cartRepository;
+    private final DeliveryDriverRepository driverRepository;
+
     // ✅ Constructor injection (best practice)
-    public OrderService(OrderRepository orderRepository, CustomerRepository customerRepository) {
+    public OrderService(OrderRepository orderRepository, CustomerRepository customerRepository,
+                        CartRepository cartRepository, DeliveryDriverRepository driverRepository) {
         this.orderRepository = orderRepository;
         this.customerRepository = customerRepository;
+        this.cartRepository = cartRepository;
+        this.driverRepository = driverRepository;
     }
 
     // 🎯 Create a new order
-    public Order createOrder(Order order) {
-        Optional<Customer> cust = customerRepository.findById(order.getCustomer().getId());
+  public Order createOrder(UUID customerId, UUID driverId) {
+    Customer customer = customerRepository.findById(customerId)
+        .orElseThrow(() -> new RuntimeException("Customer not found"));
 
-        if (!cust.isPresent()) {
-            throw new IllegalArgumentException("Customer not found.");
-        }
-        order.setCart(cust.get().getCart());
-        order.setTotal(order.getCart().getAmount());
-        order.setOrderDate(LocalDateTime.now());
-        order.setStatus(OrderStatus.PENDING);
-        return orderRepository.save(order);
+    DeliveryDriver driver = driverRepository.findById(driverId)
+        .orElseThrow(() -> new RuntimeException("Driver not found"));
+        
+    Cart cart = cartRepository.findByCustomer(customer)
+        .orElseThrow(() -> new RuntimeException("Cart not found"));
+
+    if (cart.getCartItems().isEmpty()) {
+        throw new RuntimeException("Cart is empty");
     }
+
+    double total = 0.0;
+    for (CartItem cartItem : cart.getCartItems()) {
+        total += cartItem.getItem().getPrice() * cartItem.getQuantity();
+    }
+
+    double deliveryFee = 200.0;
+    total += deliveryFee;
+
+    Order order = new Order();
+    order.setCustomer(customer);
+    order.setCart(cart);
+    order.setStatus(OrderStatus.PENDING);
+    order.setOrderDate(LocalDateTime.now());
+    order.setDeliveryDriver(driver);
+    order.setTotal(total);
+
+    // optionally: clear cart or delete it
+    cartRepository.delete(cart);
+
+    return orderRepository.save(order);
+}
+
+
 
     // 🎯 Get order by ID
     public Optional<Order> getOrderById(UUID id) {

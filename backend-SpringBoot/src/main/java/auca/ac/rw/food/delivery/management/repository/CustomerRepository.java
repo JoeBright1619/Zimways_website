@@ -15,7 +15,8 @@ public interface CustomerRepository extends JpaRepository<Customer, UUID> {
     Customer save(Customer customer);
      // ✅ Find a customer by ID (Explicitly added for clarity)
      Optional<Customer> findById(UUID id);
- 
+
+     Optional<Customer> findByEmailAndPassword(String email, String password);
      // ✅ Delete a cart by ID (Explicitly added for clarity)
      void deleteById(UUID id);
 }

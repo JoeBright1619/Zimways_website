@@ -4,6 +4,7 @@ import auca.ac.rw.food.delivery.management.model.Order;
 import auca.ac.rw.food.delivery.management.service.OrderService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import auca.ac.rw.food.delivery.management.DTO.OrderDTO;
 
 import java.util.List;
 import java.util.Optional;
@@ -30,8 +31,8 @@ public class OrderController {
     }
 
     @PostMapping
-    public Order createOrder(@RequestBody Order order) {
-        return orderService.createOrder(order);
+    public Order createOrder(@RequestBody OrderDTO request) {
+        return orderService.createOrder(request.getCustomerId(), request.getDriverId());
     }
 
     @PutMapping("/{id}")

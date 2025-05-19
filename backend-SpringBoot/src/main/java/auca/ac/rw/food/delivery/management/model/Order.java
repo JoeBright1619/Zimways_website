@@ -44,7 +44,7 @@ public class Order {
         this.customer = customer;
         this.cart = customer.getCart();  // Assuming Cart is a property of Customer
         this.status = status;
-        this.total = cart.getAmount();  // Get total from the customer's cart
+       
         this.orderDate = LocalDateTime.now();
         this.deliveryDriver =  deliveryDriver;
     }
@@ -66,6 +66,7 @@ public class Order {
     public void setTotal(Double total) { this.total = total; }
     public void setOrderDate(LocalDateTime orderDate) { this.orderDate = orderDate; }
     public void setReceivedDate(LocalDateTime receivedDate) { this.receivedDate = receivedDate; }
+    public void setDeliveryDriver(DeliveryDriver deliveryDriver) { this.deliveryDriver = deliveryDriver; }
 
     @Override
     public String toString() {

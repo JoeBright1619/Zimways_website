@@ -2,8 +2,9 @@ package auca.ac.rw.food.delivery.management.service;
 
 
 import auca.ac.rw.food.delivery.management.model.Category;
-import auca.ac.rw.food.delivery.management.model.Restaurant;
+import auca.ac.rw.food.delivery.management.model.Vendor;
 import auca.ac.rw.food.delivery.management.repository.CategoryRepository;
+import auca.ac.rw.food.delivery.management.model.enums.ItemCategory;
 
 import org.springframework.stereotype.Service;
 import java.util.List;
@@ -18,7 +19,7 @@ public class CategoryService {
         this.categoryRepository = categoryRepository;
     }
 
-    public Optional<Category> getCategoryByName(String name){
+    public Optional<Category> getCategoryByName(ItemCategory name){
         return categoryRepository.findByName(name);
     }
 
@@ -40,7 +41,7 @@ public class CategoryService {
     }
         return categoryRepository.save(category);
     }
-    public void deleteCategoryByName(String name){
+    public void deleteCategoryByName(ItemCategory name){
         categoryRepository.deleteByName(name);
     }
 }

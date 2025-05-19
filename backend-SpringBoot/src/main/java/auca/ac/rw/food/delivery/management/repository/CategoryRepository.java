@@ -2,6 +2,7 @@ package auca.ac.rw.food.delivery.management.repository;
 
 import auca.ac.rw.food.delivery.management.model.Category;
 import org.springframework.data.jpa.repository.JpaRepository;
+import auca.ac.rw.food.delivery.management.model.enums.ItemCategory;
 
 import java.util.List;
 import java.util.Optional;
@@ -11,10 +12,12 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface CategoryRepository extends JpaRepository<Category, UUID> {
-   Optional<Category> findByName(String name);  // ✅ Find category by name
+   Optional<Category> findByName(ItemCategory name);  // ✅ Find category by name
+   List<Category> findByNameIn(List<String> names); // ✅ Find categories by a list of names
    List<Category> findAll();
    Category save(Category category);
-   
-   void deleteByName(String name);
+
+
+   void deleteByName(ItemCategory name);
    Optional<Category> findById(UUID id);
 }

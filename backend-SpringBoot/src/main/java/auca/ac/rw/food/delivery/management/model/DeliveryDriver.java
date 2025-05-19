@@ -3,6 +3,7 @@ package auca.ac.rw.food.delivery.management.model;
 import jakarta.persistence.*;
 import java.util.List;
 import java.util.UUID;
+import auca.ac.rw.food.delivery.management.model.enums.*;
 
 @Entity
 public class DeliveryDriver {
@@ -16,9 +17,12 @@ public class DeliveryDriver {
 
     @Column(nullable = false)
     private String phoneNumber;
-    
+    @Column(nullable = false)
     private String vehiclePlate;
-    private String status;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private DriverStatus status;
 
     @OneToMany(mappedBy = "deliveryDriver", cascade = CascadeType.ALL)
     private List<Order> orders;
@@ -26,7 +30,7 @@ public class DeliveryDriver {
     // Constructors
     public DeliveryDriver() {}
 
-    public DeliveryDriver(String name, String phoneNumber, String vehiclePlate, String status) {
+    public DeliveryDriver(String name, String phoneNumber, String vehiclePlate, DriverStatus status) {
         this.name = name;
         this.phoneNumber = phoneNumber;
         this.vehiclePlate = vehiclePlate;
@@ -39,9 +43,11 @@ public class DeliveryDriver {
     public String getPhoneNumber() { return phoneNumber; }
     public List<Order> getOrders() { return orders; }
     public String getVehiclePlate() { return vehiclePlate; }
-    public String getStatus() { return status; }
+    public DriverStatus getStatus() { return status; }
 
     public void setName(String name) { this.name = name; }
     public void setPhoneNumber(String phoneNumber) { this.phoneNumber = phoneNumber; }
     public void setOrders(List<Order> orders) { this.orders = orders; }
+    public void setVehiclePlate(String vehiclePlate) { this.vehiclePlate = vehiclePlate; }
+    public void setStatus(DriverStatus status) { this.status = status; }
 }

@@ -5,22 +5,15 @@ import auca.ac.rw.food.delivery.management.model.Customer;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
 @Repository
 public interface CartRepository extends JpaRepository<Cart, UUID> {
-    Optional<Cart> findByCustomer(Customer customer); // ✅ Add this method
-     // ✅ Save a cart (Explicitly added, but JpaRepository already provides this)
-     Cart save(Cart cart);
+    
+    // To find the active cart for a customer
+    Optional<Cart> findByCustomer(Customer customer);
 
-     // ✅ Find all carts (Explicitly added for clarity)
-     List<Cart> findAll();
- 
-     // ✅ Find a cart by ID (Explicitly added for clarity)
-     Optional<Cart> findById(UUID id);
- 
-     // ✅ Delete a cart by ID (Explicitly added for clarity)
-     void deleteById(UUID id);
+    // Optionally, if you ever need to check if a customer has an active cart
+    boolean existsByCustomer(Customer customer);
 }

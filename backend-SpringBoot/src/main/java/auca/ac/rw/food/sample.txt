@@ -1,0 +1,32 @@
+
+  vendor = {
+    "name": "Sharon's Zone Remera",
+    "location": "Remera, Kigali",
+    "phone": "+250788354089",
+    "email": "Sharon@gmail.com",
+    "vendorType": "RESTAURANT",
+    "status": "OPEN"
+}
+
+
+categories = 
+  {
+    "name": ""
+}
+
+item=
+{
+  "name": "Burger Promo with a fresh juice", 
+  "price": 5500, 
+  "description": "2 beef burgers Served with one plate  of fries and a choice of fresh Passion or trees tomato juice", 
+  "isAvailable": true,
+  "discountPercentage": 0.0, 
+  "vendorName": "sharon's zone remera", 
+  "categoryNames": ["fast_food", "burger","chicken"]
+}
+
+
+driver={
+  "name": "kan fofo",
+  "code": "kan"
+}

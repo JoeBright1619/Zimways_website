@@ -1,35 +1,77 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { useState, useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import Login from './screens/Login';
+import Home from './screens/Home';
+import Signup from './screens/Signup';
+import Admin from './screens/Admin';
+import AdminDashboard from './screens/AdminDashboard';
+
+import {ToastContainer, toast} from 'react-toastify';
+
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const user = sessionStorage.getItem('user');
+    if (user) {
+      setIsLoggedIn(true); // User is logged in
+    }
+  }, []); 
+
+  useEffect(() => {
+    const admin = sessionStorage.getItem('admin');
+    if (admin) {
+      setIsAdmin(true); // User is admin
+    }
+  }, []);
+
+  const handleLogin = (customerData) => {
+    if (customerData) {
+      setIsLoggedIn(true);
+    } else {
+      setIsLoggedIn(false); // Show error snackbar
+      toast.error("Invalid email or password");
+    }
+  };
+
+  const handleLogout = () => {
+    sessionStorage.removeItem('user'); // Clear user data from sessionStorage
+    setIsLoggedIn(false); // Update the state
+    navigate('/'); // Redirect to the login page
+  };
+
+
 
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
+      <div className="app">
+        <Routes>
+          <Route
+            path="/"
+            element={
+              isLoggedIn ? <Navigate to="/home" /> : <Login onLogin={handleLogin} />
+            }
+          />
+          <Route
+            path="/signup"
+            element={<Signup />}
+          />
+          <Route
+            path="/home"
+            //element={isLoggedIn ? <Home /> : <Navigate to="/" />}
+            element={<Home logout={handleLogout}/>}
+          />
+          <Route
+            path="/AdminDashboard"
+            element={isAdmin ? <AdminDashboard /> : <Navigate to="/" />}
+          />
+         
+        </Routes>
+
       </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+  );
 }
 
-export default App
+export default App;

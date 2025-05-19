@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+@CrossOrigin
 @RestController
 @RequestMapping("/api/delivery-drivers")
 public class DeliveryDriverController {

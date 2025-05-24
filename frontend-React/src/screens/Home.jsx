@@ -1,131 +1,215 @@
 /* eslint-disable no-unused-vars */
 import { useState, useEffect } from 'react';
 import { GiHamburgerMenu } from "react-icons/gi";
+import { FaSignOutAlt } from "react-icons/fa";
+import { Link, useNavigate } from 'react-router-dom';
 import SearchBar from "../components/SearchBar";
+import { fetchAllItems } from '../api/itemApi';
+import { fetchAllVendors } from '../api/vendorApi';
+import { getCustomerCart, addItemToCart } from '../api/cartApi';
+import { toast } from 'react-toastify';
+import ItemsList from '../components/ItemsList';
+import VendorsList from '../components/VendorsList';
 
-function Home({ logout }) {
-  const [menuItems, setMenuItems] = useState([]);
-  const [cart, setCart] = useState([]);
-  const [restaurants, setRestaurants] = useState([]);
+function Home({ logout, customerId }) {
+  const navigate = useNavigate();
+  const [cart, setCart] = useState(null);
   const [showNav, setShowNav] = useState(false);
+  const [items, setItems] = useState([]);
+  const [vendors, setVendors] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [categories, setCategories] = useState([]);
+
+  const loadCart = async () => {
+    if (!customerId) return;
+    
+    try {
+      const cartData = await getCustomerCart(customerId);
+      setCart(cartData);
+      console.log('Cart loaded in Home:', cartData);
+    } catch (err) {
+      // If cart doesn't exist, it will be created when first item is added
+      console.log('No cart found for customer');
+    }
+  };
 
   useEffect(() => {
-    const mockMenu = [
-      { id: 1, name: 'Pizza', description: 'Cheesy pizza with tomato sauce', price: 8000, category: 'Meals' },
-      { id: 2, name: 'Burger', description: 'Grilled beef burger with fries', price: 5000, category: 'Meals' },
-      { id: 3, name: 'Fanta', description: 'Cold orange soda', price: 1000, category: 'Drinks' },
-    ];
-    setMenuItems(mockMenu);
+    const loadData = async () => {
+      try {
+        // Load items
+        const itemsData = await fetchAllItems();
+        setItems(itemsData);
+        const uniqueCategories = [...new Set(itemsData.map(item => item.category))];
+        setCategories(uniqueCategories);
 
-    const mockRestaurants = [
-      { id: 1, name: 'Pizza Palace', description: 'Best pizzas in town' },
-      { id: 2, name: 'Burger Haven', description: 'Delicious burgers and fries' },
-    ];
-    setRestaurants(mockRestaurants);
-  }, []);
+        // Load vendors
+        const vendorsData = await fetchAllVendors();
+        setVendors(vendorsData);
 
-  const addToCart = (item) => setCart((prev) => [...prev, item]);
-  const removeFromCart = (indexToRemove) => setCart((prev) => prev.filter((_, index) => index !== indexToRemove));
-  const total = cart.reduce((sum, item) => sum + item.price, 0);
+        // Load cart if customer is logged in
+        await loadCart();
 
-  const categories = [...new Set(menuItems.map((item) => item.category))];
+        setLoading(false);
+      } catch (err) {
+        const errorMessage = err.response?.data?.message || err.message || 'Failed to load data';
+        setError(errorMessage);
+        toast.error(errorMessage);
+        setLoading(false);
+      }
+    };
+    loadData();
+  }, [customerId]);
+
+  // Close nav when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (showNav && !event.target.closest('.nav-menu') && !event.target.closest('.hamburger-button')) {
+        setShowNav(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showNav]);
+
+  const addToCart = async (item) => {
+    if (!customerId) {
+      toast.error('Please login to add items to cart');
+      navigate('/login');
+      return;
+    }
+
+    try {
+      await addItemToCart(customerId, item.id, 1);
+      // Refresh cart data after adding item
+      await loadCart();
+      toast.success(`${item.name} added to cart`);
+    } catch (error) {
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to add item to cart';
+      toast.error(errorMessage);
+    }
+  };
+
+  const removeFromCart = (itemId) => {
+    setCart(prev => ({
+      ...prev,
+      cartItems: prev.cartItems.filter(item => item.item.id !== itemId)
+    }));
+  };
+
+  const total = cart?.cartItems?.reduce((sum, item) => sum + item.totalPrice, 0) || 0;
 
   return (
     <div className="min-h-screen min-w-screen bg-background text-text">
-    <header className="bg-primary text-white p-4 flex items-center justify-between">
-  <h1 className="text-2xl font-bold flex items-center font-primary text-background">
-    ZimWays
-  </h1>
-  <SearchBar />
-  <GiHamburgerMenu className="text-background mr-5 cursor-pointer hover:text-white" size={40} onClick={() => setShowNav(!showNav)} />
-</header>
-{showNav && (
-  <nav className="bg-gray-100 p-4 shadow-md">
-    <ul className="space-y-2">
-      <li>
-        <a href="#restaurants" className="text-blue-500 hover:underline">
-          Restaurants
-        </a>
-      </li>
-      <li>
-        <a href="#menu" className="text-blue-500 hover:underline">
-          Menu
-        </a>
-      </li>
-      <li>
-        <a href="#cart" className="text-blue-500 hover:underline">
-          Cart
-        </a>
-      </li>
-    </ul>
-  </nav>
-)}
+      <header className="bg-primary text-white p-4 flex items-center justify-between relative">
+        <h1 className="text-2xl font-bold flex items-center font-primary text-background">
+          ZimWays
+        </h1>
+        <SearchBar />
+        <div className="flex items-center gap-4">
+          <button
+            onClick={logout}
+            className="flex items-center gap-2 px-3 py-2 rounded-md hover:bg-primary-dark transition-colors"
+            title="Logout"
+          >
+            <FaSignOutAlt size={20} />
+            <span className="hidden sm:inline">Logout</span>
+          </button>
+          <button 
+            className="hamburger-button text-background hover:text-white transition-colors"
+            onClick={() => setShowNav(!showNav)}
+            aria-label="Toggle navigation menu"
+          >
+            <GiHamburgerMenu size={40} />
+          </button>
+        </div>
+
+        {/* Navigation Menu */}
+        {showNav && (
+          <nav className="nav-menu absolute right-0 top-full mt-2 bg-white shadow-lg rounded-lg p-4 w-64 z-50">
+            <ul className="space-y-2">
+              <li key="all-items">
+                <Link 
+                  to="/items" 
+                  className="block px-4 py-2 text-gray-800 hover:bg-primary hover:text-white rounded-md transition-colors"
+                  onClick={() => setShowNav(false)}
+                >
+                  All Items
+                </Link>
+              </li>
+              {categories.map(category => (
+                <li key={`category-${category}`}>
+                  <Link 
+                    to={`/items?category=${category}`}
+                    className="block px-4 py-2 text-gray-800 hover:bg-primary hover:text-white rounded-md transition-colors"
+                    onClick={() => setShowNav(false)}
+                  >
+                    {category}
+                  </Link>
+                </li>
+              ))}
+              <li key="cart">
+                <Link 
+                  to="/cart" 
+                  className="block px-4 py-2 text-gray-800 hover:bg-primary hover:text-white rounded-md transition-colors"
+                  onClick={() => setShowNav(false)}
+                >
+                  Cart ({cart?.cartItems?.length || 0})
+                </Link>
+              </li>
+              <li key="orders">
+                <Link 
+                  to="/orders" 
+                  className="block px-4 py-2 text-gray-800 hover:bg-primary hover:text-white rounded-md transition-colors"
+                  onClick={() => setShowNav(false)}
+                >
+                  Orders
+                </Link>
+              </li>
+            </ul>
+          </nav>
+        )}
+      </header>
+
       <main className="p-4">
-        <section id="restaurants" className="mb-8">
-          <h2 className="text-xl font-bold mb-4">Restaurants</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {restaurants.map((restaurant) => (
-              <div key={restaurant.id} className="bg-white p-4 rounded shadow">
-                <h3 className="text-lg font-bold">{restaurant.name}</h3>
-                <p className="text-gray-600">{restaurant.description}</p>
-                <button className="mt-2 bg-blue-500 text-white py-1 px-4 rounded hover:bg-blue-600">
-                  View Menu
-                </button>
+        {/* Featured Items Section */}
+        <section id="featured-items" className="mb-8">
+          <h2 className="text-xl font-bold mb-4">Featured Items</h2>
+          <div className="relative">
+            <div className="overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] pb-4">
+              <div className="flex space-x-4">
+                <ItemsList 
+                  items={items}
+                  loading={loading}
+                  error={error}
+                  onAddToCart={addToCart}
+                />
               </div>
-            ))}
+            </div>
+            <div className="absolute left-0 top-1/2 -translate-y-1/2 bg-gradient-to-r from-background to-transparent w-8 h-full"></div>
+            <div className="absolute right-0 top-1/2 -translate-y-1/2 bg-gradient-to-l from-background to-transparent w-8 h-full"></div>
           </div>
         </section>
 
-        <section id="menu" className="mb-8">
-          <h2 className="text-xl font-bold mb-4">Menu</h2>
-          {categories.map((category) => (
-            <div key={category} className="mb-6">
-              <h3 className="text-lg font-bold mb-2">{category}</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {menuItems
-                  .filter((item) => item.category === category)
-                  .map((item) => (
-                    <div key={item.id} className="bg-white p-4 rounded shadow">
-                      <h4 className="font-bold">{item.name}</h4>
-                      <p className="text-gray-600">{item.description}</p>
-                      <p className="font-bold">{item.price.toLocaleString()} RWF</p>
-                      <button
-                        onClick={() => addToCart(item)}
-                        className="mt-2 bg-blue-500 text-white py-1 px-4 rounded hover:bg-blue-600"
-                      >
-                        Add to Cart
-                      </button>
-                    </div>
-                  ))}
+        <section id="restaurants" className="mb-8">
+          <h2 className="text-xl font-bold mb-4">Vendors</h2>
+          <div className="relative">
+            <div className="overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] pb-4">
+              <div className="flex space-x-4">
+                <VendorsList 
+                  vendors={vendors}
+                  loading={loading}
+                  error={error}
+                />
               </div>
             </div>
-          ))}
+            <div className="absolute left-0 top-1/2 -translate-y-1/2 bg-gradient-to-r from-background to-transparent w-8 h-full"></div>
+            <div className="absolute right-0 top-1/2 -translate-y-1/2 bg-gradient-to-l from-background to-transparent w-8 h-full"></div>
+          </div>
         </section>
 
-        <section id="cart">
-          <h2 className="text-xl font-bold mb-4">Your Cart</h2>
-          {cart.length === 0 ? (
-            <p className="text-gray-600">Your cart is empty</p>
-          ) : (
-            <div className="bg-white p-4 rounded shadow">
-              <ul className="mb-4">
-                {cart.map((item, index) => (
-                  <li key={index} className="flex justify-between items-center mb-2">
-                    <span>{item.name}</span>
-                    <span>{item.price.toLocaleString()} RWF</span>
-                    <button
-                      onClick={() => removeFromCart(index)}
-                      className="text-red-500 hover:underline"
-                    >
-                      Remove
-                    </button>
-                  </li>
-                ))}
-              </ul>
-              <p className="font-bold">Total: {total.toLocaleString()} RWF</p>
-            </div>
-          )}
-        </section>
+        
       </main>
     </div>
   );

@@ -34,6 +34,12 @@ public class ItemController {
         return ResponseEntity.ok(items);
     }
 
+    @GetMapping("/vendor/{vendorId}")
+    public ResponseEntity<List<Item>> getItemsByVendor(@PathVariable UUID vendorId) {
+        List<Item> items = itemService.getItemsByVendorId(vendorId);
+        return ResponseEntity.ok(items);
+    }
+
     // Get an item by ID
     @GetMapping("/{id}")
     public ResponseEntity<Item> getItemById(@PathVariable UUID id) {

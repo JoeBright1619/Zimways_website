@@ -8,6 +8,8 @@ public enum ItemCategory {
     SANDWICH,
     PIZZA,
     CHICKEN,
+    BEEF,
+    FISH,
     BURGER,
     BEVERAGE,
     DESSERT,

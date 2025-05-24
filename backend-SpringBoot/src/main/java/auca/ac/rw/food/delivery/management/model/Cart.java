@@ -1,10 +1,12 @@
 package auca.ac.rw.food.delivery.management.model;
 
 import jakarta.persistence.*;
+
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-import com.fasterxml.jackson.annotation.JsonBackReference;
+
 
 @Entity
 public class Cart {
@@ -14,7 +16,7 @@ public class Cart {
 
     @OneToOne
     @JoinColumn(name = "customer_id", referencedColumnName = "id")
-    @JsonBackReference
+
     private Customer customer;
 
     @OneToMany(mappedBy = "cart", cascade = CascadeType.ALL, orphanRemoval = true)
@@ -24,6 +26,7 @@ public class Cart {
 
     public Cart(Customer customer) {
         this.customer = customer;
+        this.cartItems = new ArrayList<>();
     }
 
     // Getters and Setters

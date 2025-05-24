@@ -5,11 +5,14 @@ import jakarta.persistence.*;
 import java.util.List;
 import java.util.UUID;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 
 @Entity
-
+@Table(
+    name = "item",
+    uniqueConstraints = @UniqueConstraint(columnNames = {"vendor_id", "name"})
+)
 public class Item {
 
     @Id
@@ -41,18 +44,17 @@ public class Item {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "vendor_id", referencedColumnName = "id")
-    @JsonManagedReference
+    @JsonIgnore
     private Vendor vendor;
-
+    
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
-    name = "item_category",  // Join table name
-    joinColumns = @JoinColumn(name = "item_id"),  // Foreign key to the Item table
-    inverseJoinColumns = @JoinColumn(name = "category_id")  // Foreign key to the Category table
+        name = "item_category",
+        joinColumns = @JoinColumn(name = "item_id"),
+        inverseJoinColumns = @JoinColumn(name = "category_id")
     )
-    @JsonManagedReference
+    @JsonIgnore
     private List<Category> categories;
-
     // Constructors
     public Item() {}
 

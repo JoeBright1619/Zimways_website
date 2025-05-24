@@ -2,6 +2,7 @@ package auca.ac.rw.food.delivery.management.repository;
 
 import auca.ac.rw.food.delivery.management.model.Category;
 import auca.ac.rw.food.delivery.management.model.Item;
+import auca.ac.rw.food.delivery.management.model.Vendor;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
@@ -25,6 +26,9 @@ public interface ItemRepository extends JpaRepository<Item, UUID> {
 
     List<Item> findAll();
 
+    @Query("SELECT i FROM Item i WHERE i.vendor.id = :vendorId")
+    List<Item> findByVendorId(@Param("vendorId") UUID vendorId);
+
     // ✅ Find items cheaper than a certain price
     List<Item> findByPriceLessThan(double price);
 
@@ -33,9 +37,10 @@ public interface ItemRepository extends JpaRepository<Item, UUID> {
     // ✅ Find items containing a keyword in description
     List<Item> findByDescriptionContainingIgnoreCase(String keyword);
 
-    List<Item> findByVendorId(UUID id);
     // ✅ Find items by vendor name
     List<Item> findByVendorName(String vendorName);
+
+    Optional<Item> findByVendorAndName(Vendor vendor, String name);
 
     // ✅ Custom delete method by name
     void deleteByName(String name);

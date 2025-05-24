@@ -16,4 +16,5 @@ public interface CartRepository extends JpaRepository<Cart, UUID> {
 
     // Optionally, if you ever need to check if a customer has an active cart
     boolean existsByCustomer(Customer customer);
+    
 }

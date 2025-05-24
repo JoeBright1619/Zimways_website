@@ -30,3 +30,11 @@ driver={
   "name": "kan fofo",
   "code": "kan"
 }
+
+user={
+  "name": "kan fofo",
+    "email": "fofo@gmail.com",
+    "phone": "0785528943",
+    "password": "fofo",
+    "address": "kk 300st"
+}

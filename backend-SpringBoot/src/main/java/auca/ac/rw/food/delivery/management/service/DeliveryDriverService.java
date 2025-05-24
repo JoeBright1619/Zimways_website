@@ -4,6 +4,7 @@ import auca.ac.rw.food.delivery.management.model.DeliveryDriver;
 import auca.ac.rw.food.delivery.management.repository.DeliveryDriverRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import auca.ac.rw.food.delivery.management.model.enums.DriverStatus;
 
 import java.util.List;
 import java.util.Optional;
@@ -26,7 +27,7 @@ public class DeliveryDriverService {
     }
 
     // Get all delivery drivers with a specific status
-    public List<DeliveryDriver> getDriversByStatus(String status) {
+    public List<DeliveryDriver> getDriversByStatus(DriverStatus status) {
         return deliveryDriverRepository.findByStatus(status);
     }
 
@@ -46,7 +47,7 @@ public class DeliveryDriverService {
     }
 
     // Count the total number of drivers with a specific status
-    public Long countDriversByStatus(String status) {
+    public Long countDriversByStatus(DriverStatus status) {
         return deliveryDriverRepository.countByStatus(status);
     }
 

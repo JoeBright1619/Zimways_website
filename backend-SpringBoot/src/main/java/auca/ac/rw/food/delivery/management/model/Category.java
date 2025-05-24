@@ -20,7 +20,6 @@ public class Category {
 
     // Many Categories can have many Items
     @ManyToMany(mappedBy = "categories")  // mappedBy points to the field in the Item class
-    @JsonBackReference
     private List<Item> items;  // This is the inverse side of the relationship
 
     // Constructors

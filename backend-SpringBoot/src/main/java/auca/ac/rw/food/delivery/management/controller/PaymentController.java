@@ -1,12 +1,14 @@
 package auca.ac.rw.food.delivery.management.controller;
 
 import auca.ac.rw.food.delivery.management.model.Payment;
+import auca.ac.rw.food.delivery.management.model.enums.PaymentMethod;
+import auca.ac.rw.food.delivery.management.model.enums.PaymentStatus;
 import auca.ac.rw.food.delivery.management.service.PaymentService;
-import auca.ac.rw.food.delivery.management.model.Order;
-import auca.ac.rw.food.delivery.management.repository.OrderRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -16,63 +18,116 @@ import java.util.UUID;
 public class PaymentController {
 
     private final PaymentService paymentService;
-    private final OrderRepository orderRepository;  // Add this
 
-    // Constructor injection
-    @Autowired
-    public PaymentController(PaymentService paymentService, OrderRepository orderRepository) {
+    public PaymentController(PaymentService paymentService) {
         this.paymentService = paymentService;
-        this.orderRepository = orderRepository;  // Initialize the OrderRepository
     }
 
-    // Create a new payment
-    @PostMapping
-    public Payment createPayment(@RequestBody Payment payment) {
-        return paymentService.createPayment(payment);
-    }
-
-    // Get payment by order
-    @GetMapping("/order/{orderId}")
-    public Optional<Payment> getPaymentByOrder(@PathVariable UUID orderId) {
-        // Fetch the Order using the order ID
-        Optional<Order> order = orderRepository.findById(orderId);
-        
-        if (order.isPresent()) {
-            // Pass the Order object to the service if found
-            return paymentService.getPaymentByOrder(order.get());
-        } else {
-            // If the order is not found, return an empty Optional
-            return Optional.empty();
+    // Create a new payment for an order
+    @PostMapping("/order/{orderId}")
+    public ResponseEntity<Payment> createPayment(
+            @PathVariable UUID orderId,
+            @RequestParam PaymentMethod paymentMethod) {
+        try {
+            Payment payment = paymentService.createPayment(orderId, paymentMethod);
+            return ResponseEntity.ok(payment);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().build();
         }
     }
 
-    // Get all payments by payment method
+    // Process a payment
+    @PostMapping("/{paymentId}/process")
+    public ResponseEntity<Payment> processPayment(@PathVariable UUID paymentId) {
+        try {
+            Payment payment = paymentService.processPayment(paymentId);
+            return ResponseEntity.ok(payment);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    // Get payment by ID
+    @GetMapping("/{paymentId}")
+    public ResponseEntity<Payment> getPaymentById(@PathVariable UUID paymentId) {
+        return paymentService.getPaymentById(paymentId)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    // Get all payments
+    @GetMapping
+    public List<Payment> getAllPayments() {
+        return paymentService.getAllPayments();
+    }
+
+    // Get payments by status
+    @GetMapping("/status/{status}")
+    public List<Payment> getPaymentsByStatus(@PathVariable PaymentStatus status) {
+        return paymentService.getPaymentsByStatus(status);
+    }
+
+    // Get payments by method
     @GetMapping("/method/{paymentMethod}")
-    public List<Payment> getPaymentsByMethod(@PathVariable String paymentMethod) {
+    public List<Payment> getPaymentsByMethod(@PathVariable PaymentMethod paymentMethod) {
         return paymentService.getPaymentsByMethod(paymentMethod);
     }
 
-    // Get all payments greater than a specific amount
+    // Get payments in date range
+    @GetMapping("/date-range")
+    public List<Payment> getPaymentsInDateRange(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime start,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime end) {
+        return paymentService.getPaymentsInDateRange(start, end);
+    }
+
+    // Get payments above amount
     @GetMapping("/amount/{amount}")
     public List<Payment> getPaymentsAboveAmount(@PathVariable double amount) {
         return paymentService.getPaymentsAboveAmount(amount);
     }
 
-    // Get payment count by payment method
-    @GetMapping("/count/{paymentMethod}")
-    public Long countPaymentsByMethod(@PathVariable String paymentMethod) {
-        return paymentService.countPaymentsByMethod(paymentMethod);
+    // Refund a payment
+    @PostMapping("/{paymentId}/refund")
+    public ResponseEntity<Payment> refundPayment(@PathVariable UUID paymentId) {
+        try {
+            Payment payment = paymentService.refundPayment(paymentId);
+            return ResponseEntity.ok(payment);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().build();
+        }
     }
 
-    // Get payments by date
-    @GetMapping("/date/{paymentDate}")
-    public List<Payment> getPaymentsByDate(@PathVariable String paymentDate) {
-        return paymentService.getPaymentsByDate(paymentDate);
+    // Cancel a payment
+    @PostMapping("/{paymentId}/cancel")
+    public ResponseEntity<Payment> cancelPayment(@PathVariable UUID paymentId) {
+        try {
+            Payment payment = paymentService.cancelPayment(paymentId);
+            return ResponseEntity.ok(payment);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().build();
+        }
     }
 
-    // Delete a payment by ID
+    // Get payment statistics
+    @GetMapping("/stats/status/{status}")
+    public ResponseEntity<Long> countPaymentsByStatus(@PathVariable PaymentStatus status) {
+        return ResponseEntity.ok(paymentService.countPaymentsByStatus(status));
+    }
+
+    @GetMapping("/stats/method/{paymentMethod}")
+    public ResponseEntity<Long> countPaymentsByMethod(@PathVariable PaymentMethod paymentMethod) {
+        return ResponseEntity.ok(paymentService.countPaymentsByMethod(paymentMethod));
+    }
+
+    // Delete a payment (only for failed/cancelled payments)
     @DeleteMapping("/{paymentId}")
-    public void deletePayment(@PathVariable UUID paymentId) {
-        paymentService.deletePayment(paymentId);
+    public ResponseEntity<Void> deletePayment(@PathVariable UUID paymentId) {
+        try {
+            paymentService.deletePayment(paymentId);
+            return ResponseEntity.ok().build();
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().build();
+        }
     }
 }

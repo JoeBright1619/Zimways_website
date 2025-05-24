@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import auca.ac.rw.food.delivery.management.model.enums.DriverStatus;
 
 import java.util.List;
 import java.util.Optional;
@@ -35,7 +36,7 @@ public class DeliveryDriverController {
 
     // Get all delivery drivers with a specific status
     @GetMapping("/status/{status}")
-    public List<DeliveryDriver> getDriversByStatus(@PathVariable String status) {
+    public List<DeliveryDriver> getDriversByStatus(@PathVariable DriverStatus status) {
         return deliveryDriverService.getDriversByStatus(status);
     }
 
@@ -60,7 +61,7 @@ public class DeliveryDriverController {
 
     // Count the total number of drivers with a specific status
     @GetMapping("/count/status/{status}")
-    public Long countDriversByStatus(@PathVariable String status) {
+    public Long countDriversByStatus(@PathVariable DriverStatus status) {
         return deliveryDriverService.countDriversByStatus(status);
     }
 

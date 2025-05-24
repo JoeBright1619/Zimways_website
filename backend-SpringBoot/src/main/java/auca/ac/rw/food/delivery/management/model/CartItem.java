@@ -3,6 +3,8 @@ package auca.ac.rw.food.delivery.management.model;
 import jakarta.persistence.*;
 import java.util.UUID;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 @Entity
 public class CartItem {
     @Id
@@ -11,10 +13,11 @@ public class CartItem {
 
     @ManyToOne
     @JoinColumn(name = "cart_id")
+    @JsonIgnore // ⛔ Don't serialize back to Cart
     private Cart cart;
 
     @ManyToOne
-    @JoinColumn(name = "item_id")
+    @JoinColumn(name = "item_id", nullable = false)
     private Item item;
 
     private int quantity;
@@ -34,7 +37,7 @@ public class CartItem {
     public Cart getCart() { return cart; }
     public Item getItem() { return item; }
     public int getQuantity() { return quantity; }
-    public double getTotalPrice() { return item.getPrice() * quantity; }  // Assuming price is in the Item class
+    public double getTotalPrice() { return totalPrice; }  // Assuming price is in the Item class
 
     public void setCart(Cart cart) { this.cart = cart; }
     public void setItem(Item item) { this.item = item; }

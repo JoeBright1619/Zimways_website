@@ -44,7 +44,6 @@ public class Vendor {
     private VendorStatus status = VendorStatus.OPEN; // or ACTIVE, whatever fits your logic
 
     @OneToMany(mappedBy = "vendor", cascade = CascadeType.ALL)
-    @JsonBackReference
     private List<Item> items = new ArrayList<>();
     
 

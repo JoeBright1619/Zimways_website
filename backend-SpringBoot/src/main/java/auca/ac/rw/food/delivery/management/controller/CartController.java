@@ -45,43 +45,53 @@ public class CartController {
     
 
     // ✅ Add Item to Cart
-      @PostMapping("/{cartId}/add-item")
-    public ResponseEntity<Cart> addItemToCart(
-            @PathVariable UUID cartId,
+    @PostMapping("/customer/{customerId}/add-item")
+    public ResponseEntity<Cart> addItemToCustomerCart(
+            @PathVariable UUID customerId,
             @RequestBody CartDTO request
     ) {
-        Optional<Cart> cart = cartService.getCartById(cartId);
-        return cart.map(c -> {
-            Cart updated = cartService.addItemToCart(c, request.getItemId(), request.getQuantity());
-            return ResponseEntity.ok(updated);
-        }).orElse(ResponseEntity.notFound().build());
+        return customerService.getCustomerById(customerId)
+                .map(customer -> {
+                    Cart cart = cartService.getCartByCustomer(customer)
+                            .orElseGet(() -> cartService.createCart(customer));
+
+                    Cart updated = cartService.addItemToCart(cart, request.getItemId(), request.getQuantity());
+                    return ResponseEntity.ok(updated);
+                })
+                .orElse(ResponseEntity.notFound().build());
     }
 
 
 
     // ✅ Remove Item from Cart
-     @PostMapping("/{cartId}/remove-item")
+    @PostMapping("/customer/{customerId}/remove-item")
     public ResponseEntity<Cart> removeItemFromCart(
-            @PathVariable UUID cartId,
+            @PathVariable UUID customerId,
             @RequestBody CartDTO request
     ) {
-        Optional<Cart> cart = cartService.getCartById(cartId);
-        return cart.map(c -> {
-            Cart updated = cartService.removeItemFromCart(c, request.getItemId());
-            return ResponseEntity.ok(updated);
-        }).orElse(ResponseEntity.notFound().build());
+        Optional<Customer> customerOpt = customerService.getCustomerById(customerId);
+        if (customerOpt.isEmpty()) return ResponseEntity.notFound().build();
+
+        Optional<Cart> cartOpt = cartService.getCartByCustomer(customerOpt.get());
+        if (cartOpt.isEmpty()) return ResponseEntity.notFound().build();
+
+        Cart updated = cartService.removeItemFromCart(cartOpt.get(), request.getItemId(), request.getQuantity());
+        return ResponseEntity.ok(updated);
     }
 
+
+
     // ✅ Clear Cart after Checkout
-    @PostMapping("/{cartId}/checkout")
-    public ResponseEntity<Void> checkout(@PathVariable UUID cartId) {
-        Optional<Cart> cart = cartService.getCartById(cartId);
-        if (cart.isPresent()) {
-            cartService.clearCart(cart.get());
-            return ResponseEntity.noContent().build();
-        }
-        return ResponseEntity.notFound().build();
-    }
+    @PostMapping("/customer/{customerId}/checkout")
+public ResponseEntity<String> checkoutCustomerCart(@PathVariable UUID customerId) {
+    return customerService.getCustomerById(customerId)
+            .flatMap(customer -> cartService.getCartByCustomer(customer))
+            .map(cart -> {
+                cartService.clearCart(cart);
+                return ResponseEntity.ok("Cart cleared successfully");
+            })
+            .orElse(ResponseEntity.notFound().build());
+}
 
     // ✅ Delete Cart (Admin only)
     @DeleteMapping("/{cartId}")

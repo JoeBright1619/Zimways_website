@@ -3,9 +3,9 @@ package auca.ac.rw.food.delivery.management.model;
 import jakarta.persistence.*;
 import java.util.UUID;
 
-import com.fasterxml.jackson.annotation.JsonBackReference;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonManagedReference;
+
 
 @Entity
 @Table(
@@ -33,7 +33,7 @@ public class Customer {
 
 
     @OneToOne(mappedBy = "customer", cascade = CascadeType.ALL)
-    @JsonManagedReference
+    @JsonIgnore
     private Cart cart;
 
     public Customer() {}

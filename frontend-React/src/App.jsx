@@ -1,76 +1,76 @@
 import { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import Login from './screens/Login';
 import Home from './screens/Home';
 import Signup from './screens/Signup';
-import Admin from './screens/Admin';
 import AdminDashboard from './screens/AdminDashboard';
-
-import {ToastContainer, toast} from 'react-toastify';
-
-
+import VendorDetails from './screens/VendorDetails';
+import { useUser } from './context/UserContext';
+import { ToastContainer, toast } from 'react-toastify';
+import Items from './screens/Items';
+import Cart from './screens/Cart';
 function App() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const { user, loging, logout } = useUser();
   const [isAdmin, setIsAdmin] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
-    const user = sessionStorage.getItem('user');
-    if (user) {
-      setIsLoggedIn(true); // User is logged in
-    }
-  }, []); 
-
-  useEffect(() => {
     const admin = sessionStorage.getItem('admin');
     if (admin) {
-      setIsAdmin(true); // User is admin
+      setIsAdmin(true);
     }
   }, []);
 
   const handleLogin = (customerData) => {
     if (customerData) {
-      setIsLoggedIn(true);
+      loging(customerData);
+      navigate('/home');
     } else {
-      setIsLoggedIn(false); // Show error snackbar
       toast.error("Invalid email or password");
     }
   };
 
   const handleLogout = () => {
-    sessionStorage.removeItem('user'); // Clear user data from sessionStorage
-    setIsLoggedIn(false); // Update the state
-    navigate('/'); // Redirect to the login page
+    logout();
+    navigate('/');
   };
 
-
-
   return (
-      <div className="app">
-        <Routes>
-          <Route
-            path="/"
-            element={
-              isLoggedIn ? <Navigate to="/home" /> : <Login onLogin={handleLogin} />
-            }
-          />
-          <Route
-            path="/signup"
-            element={<Signup />}
-          />
-          <Route
-            path="/home"
-            //element={isLoggedIn ? <Home /> : <Navigate to="/" />}
-            element={<Home logout={handleLogout}/>}
-          />
-          <Route
-            path="/AdminDashboard"
-            element={isAdmin ? <AdminDashboard /> : <Navigate to="/" />}
-          />
-         
-        </Routes>
-
-      </div>
+    <div className="app">
+      <Routes>
+        <Route
+          path="/"
+          element={
+            user ? <Navigate to="/home" /> : <Login onLogin={handleLogin} />
+          }
+        />
+        <Route
+          path="/signup"
+          element={<Signup />}
+        />
+        <Route
+          path="/home"
+          element={user ? <Home logout={handleLogout} customerId={user.id} /> : <Navigate to="/" />}
+        />
+        <Route
+          path="/vendor/:vendorId"
+          element={user ? <VendorDetails /> : <Navigate to="/" />}
+        />
+        <Route
+          path="/items"
+          element={user ? <Items /> : <Navigate to="/" />}
+        />
+        <Route
+          path="/cart"
+          element={user ? <Cart customerId={user.id} /> : <Navigate to="/" />}
+        />
+        <Route
+          path="/AdminDashboard"
+          element={isAdmin ? <AdminDashboard /> : <Navigate to="/" />}
+        />
+      </Routes>
+      <ToastContainer />
+    </div>
   );
 }
 

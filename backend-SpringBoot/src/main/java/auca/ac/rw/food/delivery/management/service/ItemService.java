@@ -74,11 +74,20 @@ public class ItemService {
         return itemRepository.findByVendorName(vendorName);
     }
 
+    public List<Item> getItemsByVendorId(UUID vendorId) {
+        return itemRepository.findByVendorId(vendorId);
+    }
+
     // ✅ Create a new item
     public Item createItem(ItemDTO item) {
         Vendor vendor = vendorRepository.findByNameIgnoreCase(item.getVendorName())
             .orElseThrow(() -> new IllegalArgumentException("Vendor '" + item.getVendorName() + "' not found"));
-
+    
+    Optional<Item> existingItem = itemRepository.findByVendorAndName(vendor, item.getName());
+            if (existingItem.isPresent()) {
+                throw new IllegalArgumentException("Item with this name already exists for the vendor");
+            }
+            
     // Fetch categories
     List<Category> categories = categoryRepository.findByNameIn(item.getCategoryNames());
 
@@ -90,6 +99,7 @@ public class ItemService {
                 .toList();
         throw new IllegalArgumentException("Categories not found: " + String.join(", ", missing));
     }
+
         Item newItem = new Item();
         newItem.setName(item.getName());
         newItem.setPrice(item.getPrice());

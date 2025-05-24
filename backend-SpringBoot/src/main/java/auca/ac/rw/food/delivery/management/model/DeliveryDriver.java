@@ -3,6 +3,9 @@ package auca.ac.rw.food.delivery.management.model;
 import jakarta.persistence.*;
 import java.util.List;
 import java.util.UUID;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import auca.ac.rw.food.delivery.management.model.enums.*;
 
 @Entity
@@ -25,6 +28,7 @@ public class DeliveryDriver {
     private DriverStatus status;
 
     @OneToMany(mappedBy = "deliveryDriver", cascade = CascadeType.ALL)
+    @JsonIgnore
     private List<Order> orders;
 
     // Constructors

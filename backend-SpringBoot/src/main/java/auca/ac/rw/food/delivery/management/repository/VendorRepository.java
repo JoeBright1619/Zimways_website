@@ -33,4 +33,6 @@ public interface VendorRepository extends JpaRepository<Vendor, UUID> {
     Optional<Vendor> findByNameAndLocation(String name, String location);
     // ✅ Custom delete method by name
     void deleteByName(String name);
+
+    Optional<Vendor> findByVendorId(String vendorId);
 }

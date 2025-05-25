@@ -19,4 +19,7 @@ public interface CustomerRepository extends JpaRepository<Customer, UUID> {
      Optional<Customer> findByEmailAndPassword(String email, String password);
      // ✅ Delete a cart by ID (Explicitly added for clarity)
      void deleteById(UUID id);
+
+     // Add findByEmail method
+     Optional<Customer> findByEmail(String email);
 }

@@ -1,9 +1,11 @@
 package auca.ac.rw.food.delivery.management.controller;
 
+import auca.ac.rw.food.delivery.management.DTO.LoginDTO;
 import auca.ac.rw.food.delivery.management.DTO.VendorDTO;
 import auca.ac.rw.food.delivery.management.model.Vendor;
 import auca.ac.rw.food.delivery.management.model.enums.VendorStatus;
 import auca.ac.rw.food.delivery.management.service.VendorService;
+import auca.ac.rw.food.delivery.management.config.InvalidCredentialsException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -12,6 +14,7 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/vendors")
+@CrossOrigin(origins = "http://localhost:5173", allowedHeaders = "*", methods = {RequestMethod.GET, RequestMethod.POST, RequestMethod.PUT, RequestMethod.DELETE, RequestMethod.OPTIONS})
 public class VendorController {
 
     private final VendorService vendorService;
@@ -73,5 +76,15 @@ public class VendorController {
     public ResponseEntity<Void> deleteVendorByName(@PathVariable String name) {
         vendorService.deleteVendorByName(name);
         return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/login")
+    public ResponseEntity<Vendor> login(@RequestBody LoginDTO loginDTO) {
+        try {
+            Vendor vendor = vendorService.login(loginDTO.getIdentifier(), loginDTO.getPassword());
+            return ResponseEntity.ok(vendor);
+        } catch (RuntimeException e) {
+            throw new InvalidCredentialsException(e.getMessage());
+        }
     }
 }

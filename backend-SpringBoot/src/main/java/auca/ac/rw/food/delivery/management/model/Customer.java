@@ -31,12 +31,19 @@ public class Customer {
 
     private String address;
 
+    @Column(name = "tfa_secret")
+    private String tfaSecret;
+
+    @Column(name = "tfa_enabled", nullable = false)
+    private boolean tfaEnabled = false;
 
     @OneToOne(mappedBy = "customer", cascade = CascadeType.ALL)
     @JsonIgnore
     private Cart cart;
 
-    public Customer() {}
+    public Customer() {
+        this.tfaEnabled = false;
+    }
 
     public Customer(String name, String email, String phone, String address, String password) {
         this.name = name;
@@ -44,6 +51,7 @@ public class Customer {
         this.phone = phone;
         this.address = address;
         this.password = password;
+        this.tfaEnabled = false;
     }
 
     public UUID getId() {        return id;    }
@@ -60,6 +68,22 @@ public class Customer {
     
 
     public Cart getCart() { return cart; }
+
+    public String getTfaSecret() {
+        return tfaSecret;
+    }
+
+    public void setTfaSecret(String tfaSecret) {
+        this.tfaSecret = tfaSecret;
+    }
+
+    public boolean isTfaEnabled() {
+        return tfaEnabled;
+    }
+
+    public void setTfaEnabled(boolean tfaEnabled) {
+        this.tfaEnabled = tfaEnabled;
+    }
 
     public void setName(String name) {        this.name = name;    }
 

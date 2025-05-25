@@ -1,4 +1,3 @@
-
 import api from './axios';
 
 export const fetchAllCustomers = async () => {
@@ -25,5 +24,15 @@ export const deleteCustomer = async (id) => {
 }
 export const loginCustomer = async (customer) => {
   const res = await api.post('/customers/login', customer);
+  return res.data;
+}
+
+export const requestPasswordReset = async (email) => {
+  const res = await api.post('/customers/forgot-password', { email });
+  return res.data;
+}
+
+export const resetPassword = async (token, newPassword) => {
+  const res = await api.post('/customers/reset-password', { token, newPassword });
   return res.data;
 }

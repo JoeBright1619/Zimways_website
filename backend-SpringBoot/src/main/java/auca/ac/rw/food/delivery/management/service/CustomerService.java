@@ -53,11 +53,15 @@ public class CustomerService {
             }
             if (dto.getPassword() != null) {
                 existingCustomer.setPassword(dto.getPassword());
-        }
+            }
+            // Handle 2FA fields
+            existingCustomer.setTfaSecret(dto.getTfaSecret());
+            existingCustomer.setTfaEnabled(dto.isTfaEnabled());
 
-        return customerRepository.save(existingCustomer);
-    });
-}
+            return customerRepository.save(existingCustomer);
+        });
+    }
+
     public void deleteCustomer(UUID id) {
         customerRepository.deleteById(id);
     }

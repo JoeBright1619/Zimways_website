@@ -4,11 +4,15 @@ import Login from './screens/Login';
 import Home from './screens/Home';
 import Signup from './screens/Signup';
 import AdminDashboard from './screens/AdminDashboard';
+import VendorDashboard from './screens/VendorDashboard';
 import VendorDetails from './screens/VendorDetails';
 import { useUser } from './context/UserContext';
 import { ToastContainer, toast } from 'react-toastify';
 import Items from './screens/Items';
 import Cart from './screens/Cart';
+import ForgotPassword from './screens/ForgotPassword';
+import Settings from './screens/Settings';
+
 function App() {
   const { user, loging, logout } = useUser();
   const [isAdmin, setIsAdmin] = useState(false);
@@ -35,14 +39,33 @@ function App() {
     navigate('/');
   };
 
+  // Helper function to handle home route redirection
+  const getHomeRouteElement = () => {
+    if (!user) return <Navigate to="/" />;
+    
+    if (user.role === 'vendor') {
+      return <Navigate to="/vendor-dashboard" />;
+    }
+    
+    if (user.role === 'admin' || isAdmin) {
+      return <Navigate to="/admin-dashboard" />;
+    }
+    
+    return <Home logout={handleLogout} customerId={user.id} />;
+  };
+
   return (
     <div className="app">
       <Routes>
         <Route
           path="/"
           element={
-            user ? <Navigate to="/home" /> : <Login onLogin={handleLogin} />
+            user ? <Navigate to="/home" /> : <Navigate to="/login" />
           }
+        />
+        <Route
+          path="/login"
+          element={<Login onLogin={handleLogin} />}
         />
         <Route
           path="/signup"
@@ -50,7 +73,11 @@ function App() {
         />
         <Route
           path="/home"
-          element={user ? <Home logout={handleLogout} customerId={user.id} /> : <Navigate to="/" />}
+          element={getHomeRouteElement()}
+        />
+        <Route
+          path="/vendor-dashboard"
+          element={user && user.role === 'vendor' ? <VendorDashboard /> : <Navigate to="/login" />}
         />
         <Route
           path="/vendor/:vendorId"
@@ -58,16 +85,21 @@ function App() {
         />
         <Route
           path="/items"
-          element={user ? <Items /> : <Navigate to="/" />}
+          element={user ? <Items customerId={user.id} /> : <Navigate to="/" />}
         />
         <Route
           path="/cart"
           element={user ? <Cart customerId={user.id} /> : <Navigate to="/" />}
         />
         <Route
-          path="/AdminDashboard"
+          path="/settings"
+          element={user ? <Settings /> : <Navigate to="/" />}
+        />
+        <Route
+          path="/admin-dashboard"
           element={isAdmin ? <AdminDashboard /> : <Navigate to="/" />}
         />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
       </Routes>
       <ToastContainer />
     </div>

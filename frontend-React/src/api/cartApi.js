@@ -91,4 +91,19 @@ export const deleteCart = async (cartId) => {
     } catch (error) {
         throw error.response?.data || error;
     }
+};
+
+/**
+ * Delete a cart item completely
+ * @param {string} customerId - UUID of the customer
+ * @param {string} itemId - UUID of the item to delete
+ * @returns {Promise<Object>} Updated cart object
+ */
+export const deleteCartItem = async (customerId, itemId) => {
+    try {
+        const response = await axios.delete(`/carts/customer/${customerId}/items/${itemId}`);
+        return response.data;
+    } catch (error) {
+        throw error.response?.data || error;
+    }
 }; 

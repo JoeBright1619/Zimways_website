@@ -2,26 +2,35 @@ package auca.ac.rw.food.delivery.management.controller;
 
 import auca.ac.rw.food.delivery.management.model.Customer;
 import auca.ac.rw.food.delivery.management.service.CustomerService;
+import auca.ac.rw.food.delivery.management.service.PasswordResetService;
+import auca.ac.rw.food.delivery.management.service.TwoFactorAuthService;
 import auca.ac.rw.food.delivery.management.config.InvalidCredentialsException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.web.bind.annotation.*;
 import auca.ac.rw.food.delivery.management.DTO.CustomerDTO;
+import auca.ac.rw.food.delivery.management.DTO.TwoFactorSetupDTO;
+import auca.ac.rw.food.delivery.management.DTO.TwoFactorVerifyDTO;
 
 import java.io.PrintStream;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/customers")
 public class CustomerController {
 
     private final CustomerService customerService;
+    private final PasswordResetService passwordResetService;
+    private final TwoFactorAuthService twoFactorAuthService;
 
-    public CustomerController(CustomerService customerService) {
+    public CustomerController(CustomerService customerService, PasswordResetService passwordResetService, TwoFactorAuthService twoFactorAuthService) {
         this.customerService = customerService;
+        this.passwordResetService = passwordResetService;
+        this.twoFactorAuthService = twoFactorAuthService;
     }
 
     @GetMapping
@@ -74,6 +83,100 @@ public ResponseEntity<?> updateCustomer(@PathVariable UUID id, @RequestBody Cust
     @DeleteMapping("/{id}")
     public void deleteCustomer(@PathVariable UUID id) {
         customerService.deleteCustomer(id);
+    }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<?> forgotPassword(@RequestBody Map<String, String> request) {
+        try {
+            String email = request.get("email");
+            if (email == null || email.trim().isEmpty()) {
+                return ResponseEntity.badRequest().body("Email is required");
+            }
+            
+            passwordResetService.createPasswordResetTokenForCustomer(email);
+            return ResponseEntity.ok().body("Password reset instructions have been sent to your email");
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        }
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<?> resetPassword(@RequestBody Map<String, String> request) {
+        try {
+            String token = request.get("token");
+            String newPassword = request.get("newPassword");
+            
+            if (token == null || token.trim().isEmpty()) {
+                return ResponseEntity.badRequest().body("Token is required");
+            }
+            if (newPassword == null || newPassword.trim().isEmpty()) {
+                return ResponseEntity.badRequest().body("New password is required");
+            }
+
+            passwordResetService.validateTokenAndResetPassword(token, newPassword);
+            return ResponseEntity.ok().body("Password has been reset successfully");
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        }
+    }
+
+    @PostMapping("/2fa/setup")
+    public ResponseEntity<?> setup2FA(@RequestParam UUID customerId) {
+        return customerService.getCustomerById(customerId)
+                .map(customer -> {
+                    String secret = twoFactorAuthService.generateNewSecret();
+                    String qrCodeImage = twoFactorAuthService.generateQrCodeImageUri(secret, customer.getEmail());
+                    return ResponseEntity.ok(new TwoFactorSetupDTO(qrCodeImage, secret));
+                })
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    @PostMapping("/2fa/verify")
+    public ResponseEntity<?> verify2FA(@RequestParam UUID customerId, @RequestBody TwoFactorVerifyDTO verifyDTO) {
+        return customerService.getCustomerById(customerId)
+                .map(customer -> {
+                    if (twoFactorAuthService.verifyCode(verifyDTO.getCode(), verifyDTO.getSecret())) {
+                        CustomerDTO dto = CustomerDTO.fromEntity(customer);
+                        dto.setTfaSecret(verifyDTO.getSecret());
+                        dto.setTfaEnabled(true);
+                        customerService.updateCustomer(customerId, dto);
+                        return ResponseEntity.ok().body(Map.of("message", "2FA enabled successfully"));
+                    }
+                    return ResponseEntity.badRequest().body(Map.of("message", "Invalid verification code"));
+                })
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    @PostMapping("/2fa/disable")
+    public ResponseEntity<?> disable2FA(@RequestParam UUID customerId, @RequestBody TwoFactorVerifyDTO verifyDTO) {
+        return customerService.getCustomerById(customerId)
+                .map(customer -> {
+                    if (!customer.isTfaEnabled()) {
+                        return ResponseEntity.badRequest().body(Map.of("message", "2FA is not enabled"));
+                    }
+                    if (twoFactorAuthService.verifyCode(verifyDTO.getCode(), customer.getTfaSecret())) {
+                        CustomerDTO dto = CustomerDTO.fromEntity(customer);
+                        dto.setTfaSecret(null);
+                        dto.setTfaEnabled(false);
+                        customerService.updateCustomer(customerId, dto);
+                        return ResponseEntity.ok().body(Map.of("message", "2FA disabled successfully"));
+                    }
+                    return ResponseEntity.badRequest().body(Map.of("message", "Invalid verification code"));
+                })
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    @PostMapping("/2fa/validate")
+    public ResponseEntity<?> validate2FACode(@RequestParam UUID customerId, @RequestBody TwoFactorVerifyDTO verifyDTO) {
+        return customerService.getCustomerById(customerId)
+                .map(customer -> {
+                    if (!customer.isTfaEnabled()) {
+                        return ResponseEntity.ok().body(Map.of("valid", true, "message", "2FA not enabled"));
+                    }
+                    boolean isValid = twoFactorAuthService.verifyCode(verifyDTO.getCode(), customer.getTfaSecret());
+                    return ResponseEntity.ok().body(Map.of("valid", isValid));
+                })
+                .orElse(ResponseEntity.notFound().build());
     }
 }
 

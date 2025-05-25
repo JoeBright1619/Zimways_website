@@ -2,7 +2,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { getCustomerCart, removeItemFromCart, checkoutCart, addItemToCart } from '../api/cartApi';
+import { getCustomerCart, deleteCartItem, addItemToCart, removeItemFromCart } from '../api/cartApi';
+import axios from '../api/axios';
 
 function Cart({ customerId }) {
   const navigate = useNavigate();
@@ -11,6 +12,7 @@ function Cart({ customerId }) {
   const [paymentMethod, setPaymentMethod] = useState('cash');
   const [loading, setLoading] = useState(true);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
+  const [updatingItems, setUpdatingItems] = useState(new Set());
 
   useEffect(() => {
     const loadCart = async () => {
@@ -21,14 +23,11 @@ function Cart({ customerId }) {
       }
 
       try {
-        const cartData = JSON.parse(JSON.stringify(await getCustomerCart(customerId)));
-        
-        setCart(
-          cartData
-        );
-
-        console.log("typeof cartData:", typeof cartData);
-        console.log('Cart loaded:', cart);
+        const cartData = await getCustomerCart(customerId);
+        if (cartData?.cartItems) {
+          cartData.cartItems.sort((a, b) => a.item.id - b.item.id);
+        }
+        setCart(cartData);
       } catch (error) {
         const errorMessage = error.response?.data?.message || error.message || 'Failed to load cart';
         toast.error(errorMessage);
@@ -40,44 +39,86 @@ function Cart({ customerId }) {
     loadCart();
   }, [customerId, navigate]);
 
-  const updateQuantity = async (itemId, newQuantity) => {
-    if (newQuantity < 1) return;
+  const removeItem = async (itemId) => {
+    if (updatingItems.has(itemId)) return;
+    
+    setUpdatingItems(prev => new Set([...prev, itemId]));
     
     try {
-      // If new quantity is 0, remove the item
+      // Optimistically update UI first
+      setCart(prevCart => ({
+        ...prevCart,
+        cartItems: prevCart.cartItems.filter(item => item.item.id !== itemId)
+      }));
+      
+      // Use the deleteCartItem API method to completely remove the item
+      await deleteCartItem(customerId, itemId);
+      
+      toast.success('Item removed from cart');
+    } catch (error) {
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to remove item';
+      toast.error(errorMessage);
+      // Revert optimistic update on error
+      const cartData = await getCustomerCart(customerId);
+      setCart(cartData);
+    } finally {
+      setUpdatingItems(prev => {
+        const next = new Set(prev);
+        next.delete(itemId);
+        return next;
+      });
+    }
+  };
+
+  const updateQuantity = async (itemId, newQuantity) => {
+    if (newQuantity < 1 || updatingItems.has(itemId)) return;
+    
+    setUpdatingItems(prev => new Set([...prev, itemId]));
+    
+    try {
       if (newQuantity === 0) {
         await removeItem(itemId);
         return;
       }
 
-      // Calculate the difference to add/remove
       const currentItem = cart.cartItems.find(item => item.item.id === itemId);
       const difference = newQuantity - currentItem.quantity;
       
+      // Optimistically update the UI
+      setCart(prevCart => ({
+        ...prevCart,
+        cartItems: prevCart.cartItems.map(item => 
+          item.item.id === itemId 
+            ? { ...item, quantity: newQuantity, totalPrice: item.item.price * newQuantity }
+            : item
+        ).sort((a, b) => a.item.id - b.item.id)
+      }));
+
+      // Add or remove items based on the quantity difference
       if (difference > 0) {
-        // Add items
-        const updatedCart = await addItemToCart(customerId, itemId, difference);
-        setCart(updatedCart);
-      } else if (difference < 0) {
-        // Remove items
-        const updatedCart = await removeItemFromCart(customerId, itemId, Math.abs(difference));
-        setCart(updatedCart);
+        await addItemToCart(customerId, itemId, difference);
+      } else {
+        await removeItemFromCart(customerId, itemId, Math.abs(difference));
       }
+      
+      // Fetch the latest cart state to ensure consistency
+      const updatedCart = await getCustomerCart(customerId);
+      setCart(prevCart => ({
+        ...updatedCart,
+        cartItems: updatedCart.cartItems.sort((a, b) => a.item.id - b.item.id)
+      }));
     } catch (error) {
       const errorMessage = error.response?.data?.message || error.message || 'Failed to update quantity';
       toast.error(errorMessage);
-    }
-  };
-
-  const removeItem = async (itemId) => {
-    try {
-      const currentItem = cart.cartItems.find(item => item.item.id === itemId);
-      const updatedCart = await removeItemFromCart(customerId, itemId, currentItem.quantity);
-      setCart(updatedCart);
-      toast.success('Item removed from cart');
-    } catch (error) {
-      const errorMessage = error.response?.data?.message || error.message || 'Failed to remove item';
-      toast.error(errorMessage);
+      // Revert optimistic update on error
+      const cartData = await getCustomerCart(customerId);
+      setCart(cartData);
+    } finally {
+      setUpdatingItems(prev => {
+        const next = new Set(prev);
+        next.delete(itemId);
+        return next;
+      });
     }
   };
 
@@ -87,7 +128,7 @@ function Cart({ customerId }) {
   };
 
   const calculateDeliveryFee = () => {
-    return 2000; // Fixed delivery fee
+    return 2000;
   };
 
   const calculateTotal = () => {
@@ -102,9 +143,12 @@ function Cart({ customerId }) {
 
     setCheckoutLoading(true);
     try {
-      await checkoutCart(customerId);
+      await axios.post(`/carts/customer/${customerId}/checkout`, {
+        deliveryAddress,
+        paymentMethod
+      });
       toast.success('Order placed successfully!');
-      setCart(null); // Clear cart after successful checkout
+      setCart(null);
       navigate('/orders');
     } catch (error) {
       const errorMessage = error.response?.data?.message || error.message || 'Failed to place order';
@@ -115,7 +159,7 @@ function Cart({ customerId }) {
   };
 
   return (
-    <div className="min-h-screen bg-background text-text p-4">
+    <div className="min-h-screen min-w-screen bg-background text-text p-4">
       <div className="max-w-4xl mx-auto">
         <h1 className="text-3xl font-bold mb-8">Your Cart</h1>
 
@@ -135,11 +179,10 @@ function Cart({ customerId }) {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {/* Cart Items */}
             <div className="md:col-span-2">
               <div className="bg-white rounded-lg shadow-md p-6">
                 {cart.cartItems.map(cartItem => (
-                  <div key={cartItem.id} className="flex items-center justify-between py-4 border-b last:border-b-0">
+                  <div key={`${cartItem.item.id}-${cartItem.quantity}`} className="flex items-center justify-between py-4 border-b last:border-b-0">
                     <div className="flex-1">
                       <h3 className="font-semibold">{cartItem.item.name}</h3>
                       <p className="text-gray-600">{cartItem.item.price.toLocaleString()} RWF</p>
@@ -148,23 +191,26 @@ function Cart({ customerId }) {
                       <div className="flex items-center gap-2">
                         <button
                           onClick={() => updateQuantity(cartItem.item.id, cartItem.quantity - 1)}
-                          className="px-2 py-1 bg-gray-200 rounded hover:bg-gray-300"
+                          disabled={updatingItems.has(cartItem.item.id)}
+                          className={`px-2 py-1 bg-gray-200 rounded hover:bg-gray-300 ${updatingItems.has(cartItem.item.id) ? 'opacity-50 cursor-not-allowed' : ''}`}
                         >
                           -
                         </button>
                         <span>{cartItem.quantity}</span>
                         <button
                           onClick={() => updateQuantity(cartItem.item.id, cartItem.quantity + 1)}
-                          className="px-2 py-1 bg-gray-200 rounded hover:bg-gray-300"
+                          disabled={updatingItems.has(cartItem.item.id)}
+                          className={`px-2 py-1 bg-gray-200 rounded hover:bg-gray-300 ${updatingItems.has(cartItem.item.id) ? 'opacity-50 cursor-not-allowed' : ''}`}
                         >
                           +
                         </button>
                       </div>
                       <button
                         onClick={() => removeItem(cartItem.item.id)}
-                        className="text-red-500 hover:text-red-700"
+                        disabled={updatingItems.has(cartItem.item.id)}
+                        className={`text-red-500 hover:text-red-700 ${updatingItems.has(cartItem.item.id) ? 'opacity-50 cursor-not-allowed' : ''}`}
                       >
-                        Remove
+                        {updatingItems.has(cartItem.item.id) ? 'Removing...' : 'Remove'}
                       </button>
                     </div>
                   </div>
@@ -172,7 +218,6 @@ function Cart({ customerId }) {
               </div>
             </div>
 
-            {/* Order Summary */}
             <div className="md:col-span-1">
               <div className="bg-white rounded-lg shadow-md p-6">
                 <h2 className="text-xl font-bold mb-4">Order Summary</h2>
@@ -240,4 +285,4 @@ function Cart({ customerId }) {
   );
 }
 
-export default Cart; 
+export default Cart;

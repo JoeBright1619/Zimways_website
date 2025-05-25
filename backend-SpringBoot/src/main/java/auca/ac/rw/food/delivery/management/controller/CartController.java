@@ -103,4 +103,20 @@ public ResponseEntity<String> checkoutCustomerCart(@PathVariable UUID customerId
         }
         return ResponseEntity.notFound().build();
     }
+
+    // ✅ Delete Cart Item completely
+    @DeleteMapping("/customer/{customerId}/items/{itemId}")
+    public ResponseEntity<Cart> deleteCartItem(
+            @PathVariable UUID customerId,
+            @PathVariable UUID itemId
+    ) {
+        Optional<Customer> customerOpt = customerService.getCustomerById(customerId);
+        if (customerOpt.isEmpty()) return ResponseEntity.notFound().build();
+
+        Optional<Cart> cartOpt = cartService.getCartByCustomer(customerOpt.get());
+        if (cartOpt.isEmpty()) return ResponseEntity.notFound().build();
+
+        Cart updated = cartService.deleteCartItem(cartOpt.get(), itemId);
+        return ResponseEntity.ok(updated);
+    }
 }

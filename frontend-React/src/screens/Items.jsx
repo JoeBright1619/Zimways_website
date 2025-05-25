@@ -1,11 +1,14 @@
+/* eslint-disable no-unused-vars */
 import { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { fetchAllItems, fetchItemsByCategory } from '../api/itemApi';
+import { getCustomerCart, addItemToCart } from '../api/cartApi';
 import SearchBar from '../components/SearchBar';
 import ItemsList from '../components/ItemsList';
 import { toast } from 'react-toastify';
 
-function Items() {
+function Items({ customerId }) {
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const category = searchParams.get('category');
   
@@ -15,6 +18,20 @@ function Items() {
   const [error, setError] = useState(null);
   const [selectedCategory, setSelectedCategory] = useState(category || 'all');
   const [categories, setCategories] = useState([]);
+  const [cart, setCart] = useState(null);
+
+  const loadCart = async () => {
+    if (!customerId) return;
+    
+    try {
+      const cartData = await getCustomerCart(customerId);
+      setCart(cartData);
+      console.log('Cart loaded in Items:', cartData);
+    } catch (err) {
+      // If cart doesn't exist, it will be created when first item is added
+      console.log('No cart found for customer');
+    }
+  };
 
   useEffect(() => {
     const loadItems = async () => {
@@ -36,6 +53,9 @@ function Items() {
           setCategories(uniqueCategories);
         }
         
+        // Load cart if customer is logged in
+        await loadCart();
+        
         setLoading(false);
       } catch (err) {
         const errorMessage = err.response?.data?.message || err.message || 'Failed to load items';
@@ -45,7 +65,7 @@ function Items() {
       }
     };
     loadItems();
-  }, [category]);
+  }, [category, customerId]);
 
   const handleSearch = (searchTerm) => {
     if (!Array.isArray(items)) return;
@@ -70,10 +90,22 @@ function Items() {
     }
   };
 
-  const addToCart = (item) => {
-    if (!item) return;
-    // TODO: Implement cart functionality
-    toast.success(`${item.name || 'Item'} added to cart`);
+  const addToCartHandler = async (item) => {
+    if (!customerId) {
+      toast.error('Please login to add items to cart');
+      navigate('/login');
+      return;
+    }
+
+    try {
+      await addItemToCart(customerId, item.id, 1);
+      // Refresh cart data after adding item
+      await loadCart();
+      toast.success(`${item.name} added to cart`);
+    } catch (error) {
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to add item to cart';
+      toast.error(errorMessage);
+    }
   };
 
   const formatCategory = (cat) => {
@@ -82,7 +114,7 @@ function Items() {
   };
 
   return (
-    <div className="min-h-screen w-full bg-background text-text p-4">
+    <div className="min-h-screen min-w-screen w-full bg-background text-text p-4">
       <div className="min-w-[90%] mx-auto">
         <h1 className="text-3xl font-bold mb-6">
           {category ? `${formatCategory(category)} Items` : 'All Items'}
@@ -128,7 +160,7 @@ function Items() {
               items={filteredItems}
               loading={loading}
               error={error}
-              onAddToCart={addToCart}
+              onAddToCart={addToCartHandler}
             />
           </div>
         </div>

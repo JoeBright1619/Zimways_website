@@ -106,4 +106,22 @@ public class CartService {
     public void deleteCart(UUID id) {
         cartRepository.deleteById(id);
     }
+
+    @Transactional
+    public Cart deleteCartItem(Cart cart, UUID itemId) {
+        CartItem itemToRemove = null;
+        for (CartItem ci : cart.getCartItems()) {
+            if (ci.getItem().getId().equals(itemId)) {
+                itemToRemove = ci;
+                break;
+            }
+        }
+
+        if (itemToRemove != null) {
+            cart.getCartItems().remove(itemToRemove);
+            cartItemRepository.delete(itemToRemove);
+        }
+
+        return cartRepository.save(cart);
+    }
 }

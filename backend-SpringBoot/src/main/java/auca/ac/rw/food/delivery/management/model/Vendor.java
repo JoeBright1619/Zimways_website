@@ -20,8 +20,13 @@ public class Vendor {
     @GeneratedValue(strategy = GenerationType.AUTO)
     private UUID id;
 
+    @Column(unique = true, nullable = false)
+    private String vendorId;
+
+    @Column(nullable = false)
+    private String password;
+
     @Column(nullable = false, unique = true)
-   
     private String name;
     @Column(nullable = false)
     private String location;
@@ -37,7 +42,6 @@ public class Vendor {
     private int totalRatings = 0;
 
     @Enumerated(EnumType.STRING)
-  
     private VendorType vendorType;
 
     @Enumerated(EnumType.STRING) 
@@ -73,7 +77,10 @@ public class Vendor {
     public VendorType getVendorType() { return vendorType; }
     public double getAverageRating() { return averageRating; }
     public int getTotalRatings() { return totalRatings; }
+    public String getVendorId() { return vendorId; }
+    public String getPassword() { return password; }
 
+    public void setId(UUID id) { this.id = id; }
     public void setName(String name) { this.name = name; }
     public void setLocation(String location) { this.location = location; }
     public void setStatus(VendorStatus status) { this.status = status; }
@@ -85,6 +92,8 @@ public class Vendor {
     public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }
     public void setAverageRating(double averageRating) { this.averageRating = averageRating; }
     public void setTotalRatings(int totalRatings) { this.totalRatings = totalRatings; }
+    public void setVendorId(String vendorId) { this.vendorId = vendorId; }
+    public void setPassword(String password) { this.password = password; }
 
     // Helper method to link menu items
     

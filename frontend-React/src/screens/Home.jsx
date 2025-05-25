@@ -167,6 +167,15 @@ function Home({ logout, customerId }) {
                   Orders
                 </Link>
               </li>
+              <li key="settings">
+                <Link 
+                  to="/settings" 
+                  className="block px-4 py-2 text-gray-800 hover:bg-primary hover:text-white rounded-md transition-colors"
+                  onClick={() => setShowNav(false)}
+                >
+                  Settings
+                </Link>
+              </li>
             </ul>
           </nav>
         )}

@@ -3,33 +3,85 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {ToastContainer,toast} from 'react-toastify';
 import {useLogin} from '../hooks/useLogin';
-import AdminPrompt from "./AdminPrompt";
 import axios from 'axios';
 import { useUser } from '../context/UserContext';
+import TwoFactorVerify from '../components/TwoFactorVerify';
 
 function Login() {
-  const [email, setEmail] = useState('');
+  const [role, setRole] = useState('customer');
+  const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
-  const [showPrompt, setShowPrompt] = useState(false);
+  const [show2FA, setShow2FA] = useState(false);
+  const [tempUser, setTempUser] = useState(null);
   const {customer, login, loading, error } = useLogin();
   const navigate = useNavigate();
-  const { loging: contextLogin } = useUser(); // Rename login to avoid clash
+  const { loging: contextLogin } = useUser();
 
-  const handleLogin = async() => {
-    if (!email || !password) {
+  const handleLogin = async(e) => {
+    e.preventDefault();
+    if (!identifier || !password) {
       toast.error('Please fill in all fields');
       return;
     }
-    await login(email, password);
+    
+    try {
+      let endpoint = '';
+      let payload = {};
+      
+      switch(role) {
+        case 'customer':
+          endpoint = 'http://localhost:8080/api/customers/login';
+          payload = { email: identifier, password };
+          break;
+        case 'vendor':
+          endpoint = 'http://localhost:8080/api/vendors/login';
+          payload = { identifier: identifier, password };
+          break;
+        case 'admin':
+          endpoint = 'http://localhost:8080/api/admin/login';
+          payload = { adminId: identifier, password };
+          break;
+        default:
+          toast.error('Invalid role selected');
+          return;
+      }
+
+      const response = await axios.post(endpoint, payload);
+      const loggedInUser = response.data;
+      
+      // Only check 2FA for customers
+      if (role === 'customer' && loggedInUser.tfaEnabled) {
+        setTempUser(loggedInUser);
+        setShow2FA(true);
+      } else {
+        // Handle successful login
+        contextLogin({ ...loggedInUser, role });
+        toast.success('Login successful!');
+        
+        // Navigate based on role
+        switch(role) {
+          case 'vendor':
+            navigate('/vendor-dashboard');
+            break;
+          case 'admin':
+            navigate('/admin-dashboard');
+            break;
+          default:
+            navigate('/home');
+        }
+      }
+    } catch (error) {
+      toast.error(error.response?.data || `${role} login failed`);
+    }
   };
 
-  useEffect(() => {
-    if (customer) {
+  const handle2FAVerification = (success) => {
+    if (success) {
+      contextLogin({ ...tempUser, role });
       toast.success('Login successful!');
-      contextLogin(customer); // Store in global context
       navigate('/home');
     }
-  }, [customer]);
+  };
 
   useEffect(() => {
     if (error) {
@@ -37,58 +89,121 @@ function Login() {
     }
   }, [error]);
 
-  return (
-    <div className="flex items-center justify-center min-h-screen min-w-screen bg-gray-100 flex-col">
-      <div className="bg-white p-8 rounded shadow-md w-full max-w-md">
-        <h2 className="text-2xl font-bold mb-6 text-center text-gray-800">Login</h2>
-        <input
-          type="email"
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className="w-full p-2 mb-4 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 bg-gray-50"
-          disabled={loading}
-        />
-        <input
-          type="password"
-          placeholder="Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          className="w-full p-2 mb-4 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 bg-gray-50"
-          disabled={loading}
-        />
-        <button
-          onClick={handleLogin}
-          disabled={loading}
-          className={`w-full py-2 rounded transition ${
-            loading
-              ? 'bg-blue-300 cursor-not-allowed'
-              : 'bg-blue-500 hover:bg-blue-600'
-          } text-white`}
-        >
-          {loading ? 'Logging in...' : 'Login'}
-        </button>
-        <p className="mt-4 text-center text-gray-600">
-          Don't have an account?{' '}
-          <Link to="/signup" className="text-blue-500 hover:underline">
-            Sign up
-          </Link>
-        </p>
+  // Reset identifier when role changes
+  useEffect(() => {
+    setIdentifier('');
+  }, [role]);
+
+  if (show2FA) {
+    return (
+      <div className="min-h-screen min-w-screen bg-gray-100 flex flex-col items-center justify-center px-4">
+        <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8">
+          <TwoFactorVerify
+            customerId={tempUser.id}
+            onVerificationComplete={handle2FAVerification}
+          />
+        </div>
       </div>
-      <Link
-        onClick={() => setShowPrompt(true)}
-        className="text-blue-500 hover:underline mt-4"
-      >
-        Admin?
-      </Link>
-      <AdminPrompt
-        show={showPrompt}
-        onClose={() => setShowPrompt(false)}
-        onSuccess={() => {
-          setShowPrompt(false);
-          navigate('/AdminDashboard');
-        }}
-      />
+    );
+  }
+
+  const getIdentifierLabel = () => {
+    switch(role) {
+      case 'customer':
+        return 'Email';
+      case 'vendor':
+        return 'Vendor ID';
+      case 'admin':
+        return 'Admin ID';
+      default:
+        return 'Identifier';
+    }
+  };
+
+  const getIdentifierType = () => {
+    return role === 'customer' ? 'email' : 'text';
+  };
+
+  return (
+    <div className="min-h-screen min-w-screen bg-gray-100 flex flex-col items-center justify-center px-4 text-black">
+      <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8">
+        <h2 className="text-3xl font-bold text-center text-gray-800 mb-8">Login</h2>
+        <form onSubmit={handleLogin} className="space-y-6">
+          <div className="space-y-2">
+            <label htmlFor="role" className="text-sm font-medium text-gray-700">
+              Login as
+            </label>
+            <select
+              id="role"
+              value={role}
+              onChange={(e) => setRole(e.target.value)}
+              className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              disabled={loading}
+            >
+              <option value="customer">Customer</option>
+              <option value="vendor">Vendor</option>
+              <option value="admin">Admin</option>
+            </select>
+          </div>
+
+          <div className="space-y-2">
+            <label htmlFor="identifier" className="text-sm font-medium text-gray-700">
+              {getIdentifierLabel()}
+            </label>
+            <input
+              id="identifier"
+              type={getIdentifierType()}
+              placeholder={`Enter your ${getIdentifierLabel().toLowerCase()}`}
+              value={identifier}
+              onChange={(e) => setIdentifier(e.target.value)}
+              className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              disabled={loading}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <label htmlFor="password" className="text-sm font-medium text-gray-700">
+              Password
+            </label>
+            <input
+              id="password"
+              type="password"
+              placeholder="Enter your password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              disabled={loading}
+            />
+          </div>
+
+          <div className="space-y-4">
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-blue-600 text-white py-3 rounded-md hover:bg-blue-700 transition duration-200 disabled:opacity-50 font-medium"
+            >
+              {loading ? 'Logging in...' : 'Login'}
+            </button>
+
+            {role === 'customer' && (
+              <div className="flex items-center justify-between flex-col">
+                <Link
+                  to="/forgot-password"
+                  className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+                >
+                  Forgot Password?
+                </Link>
+                <p className="text-center text-gray-600">
+                  Don't have an account?{' '}
+                  <Link to="/signup" className="text-sm text-blue-600 hover:text-blue-800 font-medium">
+                    Sign up
+                  </Link>
+                </p>
+              </div>
+            )}
+          </div>
+        </form>
+      </div>
       <ToastContainer />
     </div>
   );

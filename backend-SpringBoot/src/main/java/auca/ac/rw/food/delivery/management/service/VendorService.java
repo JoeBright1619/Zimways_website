@@ -4,6 +4,7 @@ import auca.ac.rw.food.delivery.management.model.Vendor;
 import auca.ac.rw.food.delivery.management.model.enums.VendorStatus;
 import auca.ac.rw.food.delivery.management.repository.VendorRepository;
 import auca.ac.rw.food.delivery.management.DTO.VendorDTO;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -15,9 +16,11 @@ import javax.management.relation.RelationNotFoundException;
 @Service
 public class VendorService {
     private final VendorRepository vendorRepository;
+    private final PasswordEncoder passwordEncoder;
 
-    public VendorService(VendorRepository vendorRepository) {
+    public VendorService(VendorRepository vendorRepository, PasswordEncoder passwordEncoder) {
         this.vendorRepository = vendorRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     // ✅ Get all vendors
@@ -50,55 +53,53 @@ public class VendorService {
     }
 
     // ✅ Update vendor details
-public Vendor updateVendor(UUID id, VendorDTO updatedVendor) {
-    return vendorRepository.findById(id)
-            .map(existingVendor -> {
-                if (updatedVendor.getName() != null) {
-                    existingVendor.setName(updatedVendor.getName());
-                }
-                if (updatedVendor.getLocation() != null) {
-                    existingVendor.setLocation(updatedVendor.getLocation());
-                }
-                if (updatedVendor.getPhone() != null) {
-                    existingVendor.setPhone(updatedVendor.getPhone());
-                }
-                if (updatedVendor.getEmail() != null) {
-                    existingVendor.setEmail(updatedVendor.getEmail());
-                }
-                if (updatedVendor.getVendorType() != null) {
-                    existingVendor.setVendorType(updatedVendor.getVendorType());
-                }
-                if (updatedVendor.getDescription() != null) {
-                    existingVendor.setDescription(updatedVendor.getDescription());
-                }
-                if (updatedVendor.getImageUrl() != null) {
-                    existingVendor.setImageUrl(updatedVendor.getImageUrl());
-                }
-                if (updatedVendor.getStatus() != null) {
-                    existingVendor.setStatus(updatedVendor.getStatus());
-                }
-                return vendorRepository.save(existingVendor);
-            })
-            .orElseThrow(() -> new RuntimeException("Vendor not found"));
-}
+    public Vendor updateVendor(UUID id, VendorDTO updatedVendor) {
+        return vendorRepository.findById(id)
+                .map(existingVendor -> {
+                    if (updatedVendor.getName() != null) {
+                        existingVendor.setName(updatedVendor.getName());
+                    }
+                    if (updatedVendor.getLocation() != null) {
+                        existingVendor.setLocation(updatedVendor.getLocation());
+                    }
+                    if (updatedVendor.getPhone() != null) {
+                        existingVendor.setPhone(updatedVendor.getPhone());
+                    }
+                    if (updatedVendor.getEmail() != null) {
+                        existingVendor.setEmail(updatedVendor.getEmail());
+                    }
+                    if (updatedVendor.getVendorType() != null) {
+                        existingVendor.setVendorType(updatedVendor.getVendorType());
+                    }
+                    if (updatedVendor.getDescription() != null) {
+                        existingVendor.setDescription(updatedVendor.getDescription());
+                    }
+                    if (updatedVendor.getImageUrl() != null) {
+                        existingVendor.setImageUrl(updatedVendor.getImageUrl());
+                    }
+                    if (updatedVendor.getStatus() != null) {
+                        existingVendor.setStatus(updatedVendor.getStatus());
+                    }
+                    return vendorRepository.save(existingVendor);
+                })
+                .orElseThrow(() -> new RuntimeException("Vendor not found"));
+    }
 
     public void addRatingToVendor(UUID vendorId, int newRating) {
-    Vendor vendor = vendorRepository.findById(vendorId)
-                    .orElseThrow(() -> new RuntimeException("Vendor not found"));
+        Vendor vendor = vendorRepository.findById(vendorId)
+                .orElseThrow(() -> new RuntimeException("Vendor not found"));
 
-    int totalRatings = vendor.getTotalRatings();
-    double currentAvg = vendor.getAverageRating();
+        int totalRatings = vendor.getTotalRatings();
+        double currentAvg = vendor.getAverageRating();
 
-    // Calculate new average
-    double updatedAvg = ((currentAvg * totalRatings) + newRating) / (totalRatings + 1);
+        // Calculate new average
+        double updatedAvg = ((currentAvg * totalRatings) + newRating) / (totalRatings + 1);
 
-    vendor.setAverageRating(updatedAvg);
-    vendor.setTotalRatings(totalRatings + 1);
+        vendor.setAverageRating(updatedAvg);
+        vendor.setTotalRatings(totalRatings + 1);
 
-    vendorRepository.save(vendor);
-}
-
-
+        vendorRepository.save(vendor);
+    }
 
     // ✅ Delete a vendor by ID
     public void deleteVendor(UUID id) {
@@ -123,6 +124,18 @@ public Vendor updateVendor(UUID id, VendorDTO updatedVendor) {
     // ✅ Search vendors by keyword in name
     public List<Vendor> searchVendorsByName(String keyword) {
         return vendorRepository.findByNameContainingIgnoreCase(keyword);
+    }
+
+    // Add login method
+    public Vendor login(String vendorId, String password) {
+        Vendor vendor = vendorRepository.findByVendorId(vendorId)
+                .orElseThrow(() -> new RuntimeException("Vendor not found"));
+
+        if (!passwordEncoder.matches(password, vendor.getPassword())) {
+            throw new RuntimeException("Invalid password");
+        }
+
+        return vendor;
     }
 }
 

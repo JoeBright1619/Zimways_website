@@ -285,4 +285,4 @@ function Cart({ customerId }) {
   );
 }
 
-export default Cart;
+export default Cart; 

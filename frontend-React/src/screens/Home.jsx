@@ -106,7 +106,7 @@ function Home({ logout, customerId }) {
         <h1 className="text-2xl font-bold flex items-center font-primary text-background">
           ZimWays
         </h1>
-        <SearchBar />
+        <SearchBar context="home" />
         <div className="flex items-center gap-4">
           <button
             onClick={logout}

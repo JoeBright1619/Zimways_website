@@ -1,3 +1,8 @@
+Password: bright
+BCrypt Hash: $2a$10$b0WPtBB7jL/KssP08xd.feuA5MZAF9ZAF1Xwbox1871CLh7Re3c4C
+
+Password: fofo
+BCrypt Hash: $2a$10$UW38dsZvQQCkBRp5y8u32.Ib1YOcLt0C4NrzsryAgNOt5kU2G671y
 
   vendor = {
     "name": "Sharon's Zone Remera",

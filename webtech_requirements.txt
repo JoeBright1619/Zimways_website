@@ -1,0 +1,9 @@
+The system should have at least 5 entities. 4 pts
+The system should have at least 5 pages, excluding the login, forget password, and sign-up pages. 5pts
+The system should have a dashboard with a business information summary. 4 pts
+The system should use pagination when displaying the information in the table. 3 pts
+The system should have a way to reset the password using email. 4 pts
+The system should use two-factor authentication for login. 5 pts
+The system should implement a global search. Example: refer to this search on this React resource Quick Start – React  6 pts
+The system should have a way to search in the table list by any of the values of the table columns. 4 pts Ex: 
+The system should have role-based authentication. Admin and other roles based on your project idea. 5 pts

@@ -121,7 +121,7 @@ function Items({ customerId }) {
         </h1>
         
         <div className="mb-6">
-          <SearchBar onSearch={handleSearch} />
+          <SearchBar onSearch={handleSearch} context='items'/>
         </div>
 
         {!category && categories.length > 0 && (

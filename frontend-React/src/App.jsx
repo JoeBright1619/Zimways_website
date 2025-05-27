@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+//import { useState, useEffect } from 'react';
 import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import Login from './screens/Login';
 import Home from './screens/Home';
@@ -15,15 +15,10 @@ import Settings from './screens/Settings';
 
 function App() {
   const { user, loging, logout } = useUser();
-  const [isAdmin, setIsAdmin] = useState(false);
+
   const navigate = useNavigate();
 
-  useEffect(() => {
-    const admin = sessionStorage.getItem('admin');
-    if (admin) {
-      setIsAdmin(true);
-    }
-  }, []);
+ 
 
   const handleLogin = (customerData) => {
     if (customerData) {
@@ -47,7 +42,7 @@ function App() {
       return <Navigate to="/vendor-dashboard" />;
     }
     
-    if (user.role === 'admin' || isAdmin) {
+    if (user.role === 'admin' ) {
       return <Navigate to="/admin-dashboard" />;
     }
     
@@ -97,7 +92,7 @@ function App() {
         />
         <Route
           path="/admin-dashboard"
-          element={isAdmin ? <AdminDashboard /> : <Navigate to="/" />}
+          element={user && user.role === 'admin' ? <AdminDashboard /> : <Navigate to="/" />}
         />
         <Route path="/forgot-password" element={<ForgotPassword />} />
       </Routes>

@@ -4,6 +4,13 @@ public class LoginDTO {
     private String identifier; // email for customers, vendorId for vendors, adminId for admins
     private String password;
 
+    public LoginDTO() {}
+
+    public LoginDTO(String identifier, String password) {
+        this.identifier = identifier;
+        this.password = password;
+    }
+
     // Getters and Setters
     public String getIdentifier() {
         return identifier;

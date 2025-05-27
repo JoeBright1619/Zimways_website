@@ -7,6 +7,7 @@ import axios from 'axios';
 import { useUser } from '../context/UserContext';
 import TwoFactorVerify from '../components/TwoFactorVerify';
 
+
 function Login() {
   const [role, setRole] = useState('customer');
   const [identifier, setIdentifier] = useState('');
@@ -38,8 +39,9 @@ function Login() {
           payload = { identifier: identifier, password };
           break;
         case 'admin':
+          console.log("the identifier is:", identifier);
           endpoint = 'http://localhost:8080/api/admin/login';
-          payload = { adminId: identifier, password };
+          payload = { identifier, password };
           break;
         default:
           toast.error('Invalid role selected');
@@ -47,6 +49,7 @@ function Login() {
       }
 
       const response = await axios.post(endpoint, payload);
+      
       const loggedInUser = response.data;
       
       // Only check 2FA for customers
@@ -70,6 +73,7 @@ function Login() {
             navigate('/home');
         }
       }
+      
     } catch (error) {
       toast.error(error.response?.data || `${role} login failed`);
     }

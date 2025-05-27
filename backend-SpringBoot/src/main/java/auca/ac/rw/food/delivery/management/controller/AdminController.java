@@ -18,6 +18,7 @@ public class AdminController {
 
     @PostMapping("/login")
     public ResponseEntity<Admin> login(@RequestBody LoginDTO loginDTO) {
+        System.out.println("Received login request for admin: " + loginDTO.getIdentifier());
         return ResponseEntity.ok(adminService.login(loginDTO.getIdentifier(), loginDTO.getPassword()));
     }
 } 

@@ -10,6 +10,8 @@ import { getCustomerCart, addItemToCart } from '../api/cartApi';
 import { toast } from 'react-toastify';
 import ItemsList from '../components/ItemsList';
 import VendorsList from '../components/VendorsList';
+import ItemCard from '../components/ItemCard';
+import VendorCard from '../components/VendorCard';
 
 function Home({ logout, customerId }) {
   const navigate = useNavigate();
@@ -17,9 +19,13 @@ function Home({ logout, customerId }) {
   const [showNav, setShowNav] = useState(false);
   const [items, setItems] = useState([]);
   const [vendors, setVendors] = useState([]);
+  const [displayedItems, setDisplayedItems] = useState([]);
+  const [displayedVendors, setDisplayedVendors] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [categories, setCategories] = useState([]);
+  const [searchCategory, setSearchCategory] = useState('all');
+  const [currentSearchTerm, setCurrentSearchTerm] = useState('');
 
   const loadCart = async () => {
     if (!customerId) return;
@@ -40,12 +46,14 @@ function Home({ logout, customerId }) {
         // Load items
         const itemsData = await fetchAllItems();
         setItems(itemsData);
+        setDisplayedItems(itemsData);
         const uniqueCategories = [...new Set(itemsData.map(item => item.category))];
         setCategories(uniqueCategories);
 
         // Load vendors
         const vendorsData = await fetchAllVendors();
         setVendors(vendorsData);
+        setDisplayedVendors(vendorsData);
 
         // Load cart if customer is logged in
         await loadCart();
@@ -60,6 +68,21 @@ function Home({ logout, customerId }) {
     };
     loadData();
   }, [customerId]);
+
+  const handleSearchResults = (results, category, searchTerm) => {
+    setSearchCategory(category || 'all');
+    setCurrentSearchTerm(searchTerm || '');
+    
+    if (!results) {
+      // Reset to original data
+      setDisplayedItems(items);
+      setDisplayedVendors(vendors);
+      return;
+    }
+
+    setDisplayedItems(results.items);
+    setDisplayedVendors(results.vendors);
+  };
 
   // Close nav when clicking outside
   useEffect(() => {
@@ -100,13 +123,131 @@ function Home({ logout, customerId }) {
 
   const total = cart?.cartItems?.reduce((sum, item) => sum + item.totalPrice, 0) || 0;
 
+  const renderEmptyState = (type = searchCategory) => {
+    if (!currentSearchTerm) return null;
+
+    return (
+      <div className="flex flex-col items-center justify-center py-12 px-4">
+        <div className="text-gray-500 text-xl text-center">
+          {type === 'items' ? (
+            <>
+              <p>The product "{currentSearchTerm}" is not available</p>
+              <p className="mt-2 text-sm">Try searching for a different product</p>
+            </>
+          ) : type === 'vendors' ? (
+            <>
+              <p>No vendor found matching "{currentSearchTerm}"</p>
+              <p className="mt-2 text-sm">Try searching with a different name or location</p>
+            </>
+          ) : (
+            <>
+              <p>No products or vendors found matching "{currentSearchTerm}"</p>
+              <p className="mt-2 text-sm">Try searching with different keywords</p>
+            </>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  const renderContent = () => {
+    switch (searchCategory) {
+      case 'items':
+        return (
+          <section className="mb-8">
+            <h2 className="text-xl font-bold mb-4">Products</h2>
+            {displayedItems.length > 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                {displayedItems.map(item => (
+                  <ItemCard 
+                    key={item.id}
+                    item={item}
+                    onAddToCart={addToCart}
+                  />
+                ))}
+              </div>
+            ) : renderEmptyState()}
+          </section>
+        );
+
+      case 'vendors':
+        return (
+          <section className="mb-8">
+            <h2 className="text-xl font-bold mb-4">Vendors</h2>
+            {displayedVendors.length > 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                {displayedVendors.map(vendor => (
+                  <VendorCard 
+                    key={vendor.id}
+                    vendor={vendor}
+                  />
+                ))}
+              </div>
+            ) : renderEmptyState()}
+          </section>
+        );
+
+      default:
+        return (
+          <>
+            {(!displayedItems.length && !displayedVendors.length) ? (
+              renderEmptyState('all')
+            ) : (
+              <>
+                {/* Featured Items Section */}
+                <section id="featured-items" className="mb-8">
+                  <h2 className="text-xl font-bold mb-4">Featured Items</h2>
+                  {displayedItems.length > 0 ? (
+                    <div className="relative">
+                      <div className="overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] pb-4">
+                        <div className="flex space-x-4">
+                          <ItemsList 
+                            items={displayedItems}
+                            loading={loading}
+                            error={error}
+                            onAddToCart={addToCart}
+                          />
+                        </div>
+                      </div>
+                      <div className="absolute left-0 top-1/2 -translate-y-1/2 bg-gradient-to-r from-background to-transparent w-8 h-full"></div>
+                      <div className="absolute right-0 top-1/2 -translate-y-1/2 bg-gradient-to-l from-background to-transparent w-8 h-full"></div>
+                    </div>
+                  ) : renderEmptyState('items')}
+                </section>
+
+                {/* Vendors Section */}
+                <section id="vendors" className="mb-8">
+                  <h2 className="text-xl font-bold mb-4">Our Vendors</h2>
+                  {displayedVendors.length > 0 ? (
+                    <div className="relative">
+                      <div className="overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] pb-4">
+                        <div className="flex space-x-4">
+                          <VendorsList 
+                            vendors={displayedVendors}
+                            loading={loading}
+                            error={error}
+                          />
+                        </div>
+                      </div>
+                      <div className="absolute left-0 top-1/2 -translate-y-1/2 bg-gradient-to-r from-background to-transparent w-8 h-full"></div>
+                      <div className="absolute right-0 top-1/2 -translate-y-1/2 bg-gradient-to-l from-background to-transparent w-8 h-full"></div>
+                    </div>
+                  ) : renderEmptyState('vendors')}
+                </section>
+              </>
+            )}
+          </>
+        );
+    }
+  };
+
   return (
     <div className="min-h-screen min-w-screen bg-background text-text">
       <header className="bg-primary text-white p-4 flex items-center justify-between relative">
         <h1 className="text-2xl font-bold flex items-center font-primary text-background">
           ZimWays
         </h1>
-        <SearchBar context="home" />
+        <SearchBar context="home" onSearchResults={handleSearchResults} />
         <div className="flex items-center gap-4">
           <button
             onClick={logout}
@@ -182,43 +323,7 @@ function Home({ logout, customerId }) {
       </header>
 
       <main className="p-4">
-        {/* Featured Items Section */}
-        <section id="featured-items" className="mb-8">
-          <h2 className="text-xl font-bold mb-4">Featured Items</h2>
-          <div className="relative">
-            <div className="overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] pb-4">
-              <div className="flex space-x-4">
-                <ItemsList 
-                  items={items}
-                  loading={loading}
-                  error={error}
-                  onAddToCart={addToCart}
-                />
-              </div>
-            </div>
-            <div className="absolute left-0 top-1/2 -translate-y-1/2 bg-gradient-to-r from-background to-transparent w-8 h-full"></div>
-            <div className="absolute right-0 top-1/2 -translate-y-1/2 bg-gradient-to-l from-background to-transparent w-8 h-full"></div>
-          </div>
-        </section>
-
-        <section id="restaurants" className="mb-8">
-          <h2 className="text-xl font-bold mb-4">Vendors</h2>
-          <div className="relative">
-            <div className="overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] pb-4">
-              <div className="flex space-x-4">
-                <VendorsList 
-                  vendors={vendors}
-                  loading={loading}
-                  error={error}
-                />
-              </div>
-            </div>
-            <div className="absolute left-0 top-1/2 -translate-y-1/2 bg-gradient-to-r from-background to-transparent w-8 h-full"></div>
-            <div className="absolute right-0 top-1/2 -translate-y-1/2 bg-gradient-to-l from-background to-transparent w-8 h-full"></div>
-          </div>
-        </section>
-
-        
+        {renderContent()}
       </main>
     </div>
   );

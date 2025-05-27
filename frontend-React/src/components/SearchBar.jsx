@@ -5,7 +5,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { searchItemsByKeyword } from '../api/itemApi';
 import { searchVendorsByName } from '../api/vendorApi';
 
-function SearchBar({ context = 'home' }) {
+function SearchBar({ context = 'home', onSearchResults }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [searchCategory, setSearchCategory] = useState('all');
   const navigate = useNavigate();
@@ -18,7 +18,7 @@ function SearchBar({ context = 'home' }) {
         return [
           { value: 'all', label: 'All' },
           { value: 'items', label: 'Products' },
-          { value: 'vendors', label: 'Restaurants' }
+          { value: 'vendors', label: 'Vendors' }
         ];
       case 'items':
         return [
@@ -39,54 +39,45 @@ function SearchBar({ context = 'home' }) {
 
   const handleSearch = async (e) => {
     e.preventDefault();
-    if (!searchTerm.trim()) return;
-
+    
     try {
-      let searchResults;
-      const searchParams = new URLSearchParams();
+      let results = {};
+      let items;
+      let vendors;
+
+      if (!searchTerm.trim()) {
+        // If search is empty, pass null to reset to original data
+        onSearchResults && onSearchResults(null, searchCategory, '');
+        return;
+      }
 
       switch (searchCategory) {
-        case 'items':
-          searchResults = await searchItemsByKeyword(searchTerm);
-          searchParams.set('type', 'items');
+        case 'items': {
+          items = await searchItemsByKeyword(searchTerm);
+          results = { items, vendors: [] };
           break;
-        case 'vendors':
-          searchResults = await searchVendorsByName(searchTerm);
-          searchParams.set('type', 'vendors');
+        }
+        case 'vendors': {
+          vendors = await searchVendorsByName(searchTerm);
+          results = { items: [], vendors };
           break;
-        case 'all':
-          // For home context, search both items and vendors
-          if (context === 'home') {
-            const [items, vendors] = await Promise.all([
-              searchItemsByKeyword(searchTerm),
-              searchVendorsByName(searchTerm)
-            ]);
-            searchResults = { items, vendors };
-            searchParams.set('type', 'all');
-          } else {
-            // For other contexts, search based on the context
-            searchResults = context === 'items' 
-              ? await searchItemsByKeyword(searchTerm)
-              : await searchVendorsByName(searchTerm);
-            searchParams.set('type', context);
-          }
+        }
+        case 'all': {
+          const [itemResults, vendorResults] = await Promise.all([
+            searchItemsByKeyword(searchTerm),
+            searchVendorsByName(searchTerm)
+          ]);
+          results = { items: itemResults, vendors: vendorResults };
           break;
+        }
         default:
           return;
       }
 
-      searchParams.set('q', searchTerm);
-      searchParams.set('category', searchCategory);
-      
-      // Navigate to search results page with the search parameters
-      navigate(`/search?${searchParams.toString()}`, { 
-        state: { 
-          results: searchResults,
-          searchTerm,
-          searchCategory,
-          context
-        }
-      });
+      // Pass results, category, and search term to parent
+      if (onSearchResults) {
+        onSearchResults(results, searchCategory, searchTerm.trim());
+      }
     } catch (error) {
       console.error('Search failed:', error);
     }

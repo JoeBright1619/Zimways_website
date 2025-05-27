@@ -36,12 +36,8 @@ public class PasswordResetService {
 
         Customer customer = customerOpt.get();
         
-        // Invalidate any existing unused tokens
-        tokenRepository.findByCustomerAndUsedFalse(customer)
-                .ifPresent(token -> {
-                    token.setUsed(true);
-                    tokenRepository.save(token);
-                });
+        // Delete any existing tokens for this customer
+        tokenRepository.deleteByCustomer(customer);
 
         // Generate new token
         String token = RandomStringUtils.randomNumeric(6);

@@ -33,6 +33,9 @@ public class Order {
     private Double total;
     private LocalDateTime orderDate;
     private LocalDateTime receivedDate;
+    
+    @Column(columnDefinition = "TEXT")
+    private String deliveryAddress;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -61,6 +64,7 @@ public class Order {
     public LocalDateTime getOrderDate() { return orderDate; }
     public LocalDateTime getReceivedDate() { return receivedDate; }
     public DeliveryDriver getDeliveryDriver() { return deliveryDriver; }
+    public String getDeliveryAddress() { return deliveryAddress; }
 
     public void setCustomer(Customer customer) { this.customer = customer; }
     public void setCart(Cart cart) { this.cart = cart; }
@@ -69,6 +73,7 @@ public class Order {
     public void setOrderDate(LocalDateTime orderDate) { this.orderDate = orderDate; }
     public void setReceivedDate(LocalDateTime receivedDate) { this.receivedDate = receivedDate; }
     public void setDeliveryDriver(DeliveryDriver deliveryDriver) { this.deliveryDriver = deliveryDriver; }
+    public void setDeliveryAddress(String deliveryAddress) { this.deliveryAddress = deliveryAddress; }
 
     @Override
     public String toString() {

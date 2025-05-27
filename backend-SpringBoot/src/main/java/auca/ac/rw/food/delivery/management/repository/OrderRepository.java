@@ -53,4 +53,6 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
     Optional<Order> findById(UUID id);
 
     void deleteById(UUID id);
+
+    List<Order> findTop5ByOrderByOrderDateDesc();
 }

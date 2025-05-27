@@ -83,79 +83,89 @@ public class ItemService {
         Vendor vendor = vendorRepository.findByNameIgnoreCase(item.getVendorName())
             .orElseThrow(() -> new IllegalArgumentException("Vendor '" + item.getVendorName() + "' not found"));
     
-    Optional<Item> existingItem = itemRepository.findByVendorAndName(vendor, item.getName());
-            if (existingItem.isPresent()) {
-                throw new IllegalArgumentException("Item with this name already exists for the vendor");
-            }
+        Optional<Item> existingItem = itemRepository.findByVendorAndName(vendor, item.getName());
+        if (existingItem.isPresent()) {
+            throw new IllegalArgumentException("Item with this name already exists for the vendor");
+        }
             
-    // Fetch categories
-    List<Category> categories = categoryRepository.findByNameIn(item.getCategoryNames());
+        // Fetch categories
+        List<Category> categories = categoryRepository.findByNameIn(item.getCategoryNames());
 
-    // Check if all categories were found
-    if (categories.size() != item.getCategoryNames().size()) {
-        List<ItemCategory> foundNames = categories.stream().map(Category::getName).toList();
-        List<String> missing = item.getCategoryNames().stream()
-                .filter(name -> !foundNames.contains(name))
-                .toList();
-        throw new IllegalArgumentException("Categories not found: " + String.join(", ", missing));
-    }
+        // Check if all categories were found
+        if (categories.size() != item.getCategoryNames().size()) {
+            List<ItemCategory> foundNames = categories.stream().map(Category::getName).toList();
+            List<String> missing = item.getCategoryNames().stream()
+                    .filter(name -> !foundNames.contains(name))
+                    .toList();
+            throw new IllegalArgumentException("Categories not found: " + String.join(", ", missing));
+        }
 
         Item newItem = new Item();
         newItem.setName(item.getName());
         newItem.setPrice(item.getPrice());
         newItem.setDescription(item.getDescription());
         newItem.setImageUrl(item.getImageUrl());
+        
+        // Set availability explicitly
+        System.out.println("Setting initial isAvailable to: " + item.isAvailable());
         newItem.setAvailable(item.isAvailable());
+        
         newItem.setDiscountPercentage(item.getDiscountPercentage());
         newItem.setVendor(vendor);
         newItem.setCategories(categories);
-        return itemRepository.save(newItem);
+        
+        Item savedItem = itemRepository.save(newItem);
+        System.out.println("Saved new item isAvailable: " + savedItem.isAvailable());
+        return savedItem;
     }
 
     // ✅ Update an existing item
     public Item updateItem(UUID id, ItemDTO updatedItem) {
-    return itemRepository.findById(id)
-            .map(existingItem -> {
-                if (updatedItem.getName() != null && !updatedItem.getName().trim().isEmpty()) {
-                    existingItem.setName(updatedItem.getName().trim());
-                }
-
-                if (updatedItem.getPrice() >= 0) {
-                    existingItem.setPrice(updatedItem.getPrice());
-                }
-
-                if (updatedItem.getDescription() != null) {
-                    existingItem.setDescription(updatedItem.getDescription().trim());
-                }
-
-                if (updatedItem.getImageUrl() != null) {
-                    existingItem.setImageUrl(updatedItem.getImageUrl().trim());
-                }
-
-                existingItem.setAvailable(updatedItem.isAvailable());
-
-                if (updatedItem.getDiscountPercentage() >= 0) {
-                    existingItem.setDiscountPercentage(updatedItem.getDiscountPercentage());
-                }
-
-                // Handle category update if provided
-                if (updatedItem.getCategoryNames() != null && !updatedItem.getCategoryNames().isEmpty()) {
-                    List<Category> categories = categoryRepository.findByNameIn(updatedItem.getCategoryNames());
-                    if (!categories.isEmpty()) {
-                        existingItem.setCategories(categories);
+        return itemRepository.findById(id)
+                .map(existingItem -> {
+                    if (updatedItem.getName() != null && !updatedItem.getName().trim().isEmpty()) {
+                        existingItem.setName(updatedItem.getName().trim());
                     }
-                }
 
-                // Handle vendor update if provided
-                if (updatedItem.getVendorName() != null && !updatedItem.getVendorName().trim().isEmpty()) {
-                    vendorRepository.findByNameIgnoreCase(updatedItem.getVendorName().trim()).ifPresent(existingItem::setVendor);
-                }
+                    if (updatedItem.getPrice() >= 0) {
+                        existingItem.setPrice(updatedItem.getPrice());
+                    }
 
-                return itemRepository.save(existingItem);
-            })
-            .orElseThrow(() -> new RuntimeException("Item not found"));
-}
+                    if (updatedItem.getDescription() != null) {
+                        existingItem.setDescription(updatedItem.getDescription().trim());
+                    }
 
+                    if (updatedItem.getImageUrl() != null) {
+                        existingItem.setImageUrl(updatedItem.getImageUrl().trim());
+                    }
+
+                    // Always update isAvailable as it's a boolean
+                    System.out.println("Updating isAvailable from " + existingItem.isAvailable() + " to " + updatedItem.isAvailable());
+                    existingItem.setAvailable(updatedItem.isAvailable());
+
+                    if (updatedItem.getDiscountPercentage() >= 0) {
+                        existingItem.setDiscountPercentage(updatedItem.getDiscountPercentage());
+                    }
+
+                    // Handle category update if provided
+                    if (updatedItem.getCategoryNames() != null && !updatedItem.getCategoryNames().isEmpty()) {
+                        List<Category> categories = categoryRepository.findByNameIn(updatedItem.getCategoryNames());
+                        if (!categories.isEmpty()) {
+                            existingItem.setCategories(categories);
+                        }
+                    }
+
+                    // Handle vendor update if provided
+                    if (updatedItem.getVendorName() != null && !updatedItem.getVendorName().trim().isEmpty()) {
+                        vendorRepository.findByNameIgnoreCase(updatedItem.getVendorName().trim()).ifPresent(existingItem::setVendor);
+                    }
+
+                    Item savedItem = itemRepository.save(existingItem);
+                    System.out.println("Saved item isAvailable: " + savedItem.isAvailable());
+                    return savedItem;
+                })
+                .orElseThrow(() -> new RuntimeException("Item not found"));
+    }
 
     // ✅ Delete an item by ID
     public void deleteItem(UUID id) {

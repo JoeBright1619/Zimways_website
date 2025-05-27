@@ -4,6 +4,7 @@ import auca.ac.rw.food.delivery.management.model.Order;
 import auca.ac.rw.food.delivery.management.model.enums.OrderStatus;
 import auca.ac.rw.food.delivery.management.model.enums.PaymentMethod;
 import auca.ac.rw.food.delivery.management.service.OrderService;
+import auca.ac.rw.food.delivery.management.DTO.OrderDTO;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -26,9 +27,22 @@ public class OrderController {
     @PostMapping("/customer/{customerId}/driver/{driverId}")
     public ResponseEntity<Order> createOrder(
             @PathVariable UUID customerId,
-            @PathVariable UUID driverId) {
+            @PathVariable UUID driverId,
+            @RequestBody(required = false) OrderDTO orderDTO) {
         try {
+            if (orderDTO == null) {
+                orderDTO = new OrderDTO();
+            }
+            orderDTO.setCustomerId(customerId);
+            orderDTO.setDriverId(driverId);
+            
             Order order = orderService.createOrder(customerId, driverId);
+            
+            // If delivery address is provided, update it
+            if (orderDTO.getDeliveryAddress() != null && !orderDTO.getDeliveryAddress().trim().isEmpty()) {
+                order.setDeliveryAddress(orderDTO.getDeliveryAddress().trim());
+            }
+            
             return ResponseEntity.ok(order);
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().build();

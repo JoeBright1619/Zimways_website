@@ -53,7 +53,7 @@ public class Item {
         joinColumns = @JoinColumn(name = "item_id"),
         inverseJoinColumns = @JoinColumn(name = "category_id")
     )
-    @JsonIgnore
+    @JsonManagedReference
     private List<Category> categories;
     // Constructors
     public Item() {}

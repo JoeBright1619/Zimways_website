@@ -3,16 +3,21 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { getCustomerCart, deleteCartItem, addItemToCart, removeItemFromCart } from '../api/cartApi';
+import { createOrder, updateOrderStatus } from '../api/orderApi';
+import { createPayment, processPayment } from '../api/paymentApi';
 import axios from '../api/axios';
 
 function Cart({ customerId }) {
   const navigate = useNavigate();
   const [cart, setCart] = useState(null);
   const [deliveryAddress, setDeliveryAddress] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState('cash');
+  const [paymentMethod, setPaymentMethod] = useState('CASH');
   const [loading, setLoading] = useState(true);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [updatingItems, setUpdatingItems] = useState(new Set());
+  const [orderId, setOrderId] = useState(null);
+  const [orderStatus, setOrderStatus] = useState(null);
+  const [paymentStatus, setPaymentStatus] = useState(null);
 
   useEffect(() => {
     const loadCart = async () => {
@@ -25,7 +30,11 @@ function Cart({ customerId }) {
       try {
         const cartData = await getCustomerCart(customerId);
         if (cartData?.cartItems) {
-          cartData.cartItems.sort((a, b) => a.item.id - b.item.id);
+          cartData.cartItems.sort((a, b) => {
+            if (a.item.id < b.item.id) return -1;
+            if (a.item.id > b.item.id) return 1;
+            return 0;
+          });
         }
         setCart(cartData);
       } catch (error) {
@@ -45,21 +54,32 @@ function Cart({ customerId }) {
     setUpdatingItems(prev => new Set([...prev, itemId]));
     
     try {
-      // Optimistically update UI first
-      setCart(prevCart => ({
+      setCart(prevCart => {
+        const updatedItems = prevCart.cartItems.filter(item => item.item.id !== itemId);
+        updatedItems.sort((a, b) => {
+          if (a.item.id < b.item.id) return -1;
+          if (a.item.id > b.item.id) return 1;
+          return 0;
+        });
+        return {
         ...prevCart,
-        cartItems: prevCart.cartItems.filter(item => item.item.id !== itemId)
-      }));
+          cartItems: updatedItems
+        };
+      });
       
-      // Use the deleteCartItem API method to completely remove the item
       await deleteCartItem(customerId, itemId);
-      
       toast.success('Item removed from cart');
     } catch (error) {
       const errorMessage = error.response?.data?.message || error.message || 'Failed to remove item';
       toast.error(errorMessage);
-      // Revert optimistic update on error
       const cartData = await getCustomerCart(customerId);
+      if (cartData?.cartItems) {
+        cartData.cartItems.sort((a, b) => {
+          if (a.item.id < b.item.id) return -1;
+          if (a.item.id > b.item.id) return 1;
+          return 0;
+        });
+      }
       setCart(cartData);
     } finally {
       setUpdatingItems(prev => {
@@ -84,34 +104,49 @@ function Cart({ customerId }) {
       const currentItem = cart.cartItems.find(item => item.item.id === itemId);
       const difference = newQuantity - currentItem.quantity;
       
-      // Optimistically update the UI
-      setCart(prevCart => ({
-        ...prevCart,
-        cartItems: prevCart.cartItems.map(item => 
+      setCart(prevCart => {
+        const updatedItems = prevCart.cartItems.map(item => 
           item.item.id === itemId 
             ? { ...item, quantity: newQuantity, totalPrice: item.item.price * newQuantity }
             : item
-        ).sort((a, b) => a.item.id - b.item.id)
-      }));
+        );
+        updatedItems.sort((a, b) => {
+          if (a.item.id < b.item.id) return -1;
+          if (a.item.id > b.item.id) return 1;
+          return 0;
+        });
+        return {
+          ...prevCart,
+          cartItems: updatedItems
+        };
+      });
 
-      // Add or remove items based on the quantity difference
       if (difference > 0) {
         await addItemToCart(customerId, itemId, difference);
       } else {
         await removeItemFromCart(customerId, itemId, Math.abs(difference));
       }
       
-      // Fetch the latest cart state to ensure consistency
       const updatedCart = await getCustomerCart(customerId);
-      setCart(prevCart => ({
-        ...updatedCart,
-        cartItems: updatedCart.cartItems.sort((a, b) => a.item.id - b.item.id)
-      }));
+      if (updatedCart?.cartItems) {
+        updatedCart.cartItems.sort((a, b) => {
+          if (a.item.id < b.item.id) return -1;
+          if (a.item.id > b.item.id) return 1;
+          return 0;
+        });
+      }
+      setCart(updatedCart);
     } catch (error) {
       const errorMessage = error.response?.data?.message || error.message || 'Failed to update quantity';
       toast.error(errorMessage);
-      // Revert optimistic update on error
       const cartData = await getCustomerCart(customerId);
+      if (cartData?.cartItems) {
+        cartData.cartItems.sort((a, b) => {
+          if (a.item.id < b.item.id) return -1;
+          if (a.item.id > b.item.id) return 1;
+          return 0;
+        });
+      }
       setCart(cartData);
     } finally {
       setUpdatingItems(prev => {
@@ -143,16 +178,49 @@ function Cart({ customerId }) {
 
     setCheckoutLoading(true);
     try {
+      const orderData = {
+        deliveryAddress: deliveryAddress,
+        items: cart.cartItems.map(item => ({
+          itemId: item.item.id,
+          quantity: item.quantity
+        }))
+      };
+      
+      const newOrder = await createOrder(customerId, '00000000-0000-0000-0000-000000000000', orderData);
+      setOrderId(newOrder.id);
+      setOrderStatus('PENDING');
+
+      const payment = await createPayment(newOrder.id, paymentMethod);
+      setPaymentStatus(payment.status);
+
+      if (payment.id) {
+        const processedPayment = await processPayment(payment.id);
+        setPaymentStatus('COMPLETED');
+      }
+
+      await updateOrderStatus(newOrder.id, 'PAID');
+      setOrderStatus('PAID');
+
       await axios.post(`/carts/customer/${customerId}/checkout`, {
         deliveryAddress,
         paymentMethod
       });
-      toast.success('Order placed successfully!');
+
+      toast.success('Order placed and payment processed successfully!');
       setCart(null);
       navigate('/orders');
     } catch (error) {
-      const errorMessage = error.response?.data?.message || error.message || 'Failed to place order';
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to process order';
       toast.error(errorMessage);
+      
+      if (orderId) {
+        try {
+          await updateOrderStatus(orderId, 'PAYMENT_FAILED');
+          setOrderStatus('PAYMENT_FAILED');
+        } catch (updateError) {
+          console.error('Failed to update order status:', updateError);
+        }
+      }
     } finally {
       setCheckoutLoading(false);
     }
@@ -161,7 +229,18 @@ function Cart({ customerId }) {
   return (
     <div className="min-h-screen min-w-screen bg-background text-text p-4">
       <div className="max-w-4xl mx-auto">
-        <h1 className="text-3xl font-bold mb-8">Your Cart</h1>
+        <div className="flex justify-between items-center mb-8">
+          <h1 className="text-3xl font-bold">Your Cart</h1>
+          <button
+            onClick={() => navigate('/')}
+            className="bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary/90 transition duration-200 flex items-center gap-2"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+              <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" />
+            </svg>
+            Back to Home
+          </button>
+        </div>
 
         {loading ? (
           <div className="text-center py-8">
@@ -182,17 +261,20 @@ function Cart({ customerId }) {
             <div className="md:col-span-2">
               <div className="bg-white rounded-lg shadow-md p-6">
                 {cart.cartItems.map(cartItem => (
-                  <div key={`${cartItem.item.id}-${cartItem.quantity}`} className="flex items-center justify-between py-4 border-b last:border-b-0">
+                  <div 
+                    key={cartItem.item.id}
+                    className="flex items-center justify-between py-4 border-b last:border-b-0"
+                  >
                     <div className="flex-1">
                       <h3 className="font-semibold">{cartItem.item.name}</h3>
                       <p className="text-gray-600">{cartItem.item.price.toLocaleString()} RWF</p>
                     </div>
                     <div className="flex items-center gap-4">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 ">
                         <button
                           onClick={() => updateQuantity(cartItem.item.id, cartItem.quantity - 1)}
                           disabled={updatingItems.has(cartItem.item.id)}
-                          className={`px-2 py-1 bg-gray-200 rounded hover:bg-gray-300 ${updatingItems.has(cartItem.item.id) ? 'opacity-50 cursor-not-allowed' : ''}`}
+                          className={`px-2 py-1 bg-gray-200 rounded hover:bg-gray-300 text-white ${updatingItems.has(cartItem.item.id) ? 'opacity-50 cursor-not-allowed' : ''}`}
                         >
                           -
                         </button>
@@ -200,7 +282,7 @@ function Cart({ customerId }) {
                         <button
                           onClick={() => updateQuantity(cartItem.item.id, cartItem.quantity + 1)}
                           disabled={updatingItems.has(cartItem.item.id)}
-                          className={`px-2 py-1 bg-gray-200 rounded hover:bg-gray-300 ${updatingItems.has(cartItem.item.id) ? 'opacity-50 cursor-not-allowed' : ''}`}
+                          className={`px-2 py-1 bg-gray-200 rounded hover:bg-gray-300 text-white ${updatingItems.has(cartItem.item.id) ? 'opacity-50 cursor-not-allowed' : ''}`}
                         >
                           +
                         </button>
@@ -239,6 +321,17 @@ function Cart({ customerId }) {
                   </div>
                 </div>
 
+                {orderStatus && (
+                  <div className={`mb-4 p-4 rounded-lg ${
+                    orderStatus === 'PAID' ? 'bg-green-100 text-green-800' : 
+                    orderStatus === 'PAYMENT_FAILED' ? 'bg-red-100 text-red-800' : 
+                    'bg-blue-100 text-blue-800'
+                  }`}>
+                    <p className="font-semibold">Order Status: {orderStatus}</p>
+                    {paymentStatus && <p>Payment Status: {paymentStatus}</p>}
+                  </div>
+                )}
+
                 <div className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium mb-2">
@@ -262,9 +355,9 @@ function Cart({ customerId }) {
                       onChange={(e) => setPaymentMethod(e.target.value)}
                       className="w-full p-2 border rounded-md"
                     >
-                      <option value="cash">Cash on Delivery</option>
-                      <option value="mobile">Mobile Money</option>
-                      <option value="card">Credit/Debit Card</option>
+                      <option value="CASH">Cash on Delivery</option>
+                      <option value="MOBILE_MONEY">Mobile Money</option>
+                      <option value="CARD">Credit/Debit Card</option>
                     </select>
                   </div>
 
@@ -273,7 +366,7 @@ function Cart({ customerId }) {
                     disabled={checkoutLoading}
                     className="w-full bg-primary text-white py-3 rounded-md hover:bg-primary-dark disabled:opacity-50"
                   >
-                    {checkoutLoading ? 'Processing...' : 'Place Order'}
+                    {checkoutLoading ? 'Processing Order...' : 'Place Order'}
                   </button>
                 </div>
               </div>

@@ -116,9 +116,20 @@ function Items({ customerId }) {
   return (
     <div className="min-h-screen min-w-screen w-full bg-background text-text p-4">
       <div className="min-w-[90%] mx-auto">
-        <h1 className="text-3xl font-bold mb-6">
-          {category ? `${formatCategory(category)} Items` : 'All Items'}
-        </h1>
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-3xl font-bold">
+            {category ? `${formatCategory(category)} Items` : 'All Items'}
+          </h1>
+          <button
+            onClick={() => navigate('/')}
+            className="bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary/90 transition duration-200 flex items-center gap-2"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+              <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" />
+            </svg>
+            Back to Home
+          </button>
+        </div>
         
         <div className="mb-6">
           <SearchBar onSearch={handleSearch} context='items'/>

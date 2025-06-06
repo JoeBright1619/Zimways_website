@@ -2,12 +2,15 @@ package auca.ac.rw.food.delivery.management.controller;
 
 import auca.ac.rw.food.delivery.management.model.Category;
 import auca.ac.rw.food.delivery.management.service.CategoryService;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import auca.ac.rw.food.delivery.management.model.enums.ItemCategory;
+
 import java.util.Optional;
+import java.util.UUID;
 import java.util.List;
 
 @RestController
@@ -16,9 +19,10 @@ public class CategoryController {
 
     @Autowired
     private CategoryService categoryService;
+   
 
     // Get category by name
-    
+
     @GetMapping()
     public ResponseEntity<List<Category>> getAllCategories() {
         List<Category> categories = categoryService.getAllCategories();
@@ -37,6 +41,15 @@ public ResponseEntity<Category> getCategoryByName(@PathVariable String name) {
     } catch (IllegalArgumentException e) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
     }
+}
+    @GetMapping("/vendors/{vendorId}/categories")
+public ResponseEntity<?> getVendorCategories(@PathVariable UUID vendorId) {
+    // logic here
+    List<ItemCategory> categories = categoryService.getCategoriesByVendorId(vendorId);
+    if (categories.isEmpty()) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+    }
+    return ResponseEntity.ok(categories);
 }
 
 

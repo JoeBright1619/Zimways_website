@@ -7,7 +7,9 @@ import auca.ac.rw.food.delivery.management.model.enums.ItemCategory;
 import auca.ac.rw.food.delivery.management.repository.CategoryRepository;
 import auca.ac.rw.food.delivery.management.repository.ItemRepository;
 import auca.ac.rw.food.delivery.management.repository.VendorRepository;
-import auca.ac.rw.food.delivery.management.DTO.ItemDTO;
+import auca.ac.rw.food.delivery.management.DTO.ItemCreationDTO;
+import auca.ac.rw.food.delivery.management.DTO.ItemResponseDTO;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -40,8 +42,10 @@ public class ItemService {
     }
 
     // ✅ Get an item by ID
-    public Optional<Item> getItemById(UUID id) {
-        return itemRepository.findById(id);
+    public Optional<ItemResponseDTO> getItemById(UUID id) {
+
+        return itemRepository.findById(id)
+                .map(ItemResponseDTO::new); 
     }
 
     // ✅ Get an item by name
@@ -79,7 +83,7 @@ public class ItemService {
     }
 
     // ✅ Create a new item
-    public Item createItem(ItemDTO item) {
+    public Item createItem(ItemCreationDTO item) {
         Vendor vendor = vendorRepository.findByNameIgnoreCase(item.getVendorName())
             .orElseThrow(() -> new IllegalArgumentException("Vendor '" + item.getVendorName() + "' not found"));
     
@@ -120,7 +124,7 @@ public class ItemService {
     }
 
     // ✅ Update an existing item
-    public Item updateItem(UUID id, ItemDTO updatedItem) {
+    public Item updateItem(UUID id, ItemCreationDTO updatedItem) {
         return itemRepository.findById(id)
                 .map(existingItem -> {
                     if (updatedItem.getName() != null && !updatedItem.getName().trim().isEmpty()) {

@@ -79,6 +79,8 @@ public class Vendor {
     public int getTotalRatings() { return totalRatings; }
     public String getVendorId() { return vendorId; }
     public String getPassword() { return password; }
+    public String getDescription() { return description; }
+    public String getImageUrl() { return imageUrl; }
 
     public void setId(UUID id) { this.id = id; }
     public void setName(String name) { this.name = name; }

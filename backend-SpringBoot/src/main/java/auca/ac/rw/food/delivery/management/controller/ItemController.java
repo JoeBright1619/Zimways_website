@@ -9,7 +9,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import auca.ac.rw.food.delivery.management.model.enums.ItemCategory;
-import auca.ac.rw.food.delivery.management.DTO.ItemDTO;
+import auca.ac.rw.food.delivery.management.DTO.ItemCreationDTO;
+import auca.ac.rw.food.delivery.management.DTO.ItemResponseDTO;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -29,69 +30,88 @@ public class ItemController {
 
     // Get all items
     @GetMapping
-    public ResponseEntity<List<Item>> getAllItems() {
+    public ResponseEntity<List<ItemResponseDTO>> getAllItems() {
         List<Item> items = itemService.getAllItems();
-        return ResponseEntity.ok(items);
+        List<ItemResponseDTO> itemDTOs = items.stream()
+                .map(ItemResponseDTO::new)
+                .toList();
+        return ResponseEntity.ok(itemDTOs);
     }
 
     @GetMapping("/vendor/{vendorId}")
-    public ResponseEntity<List<Item>> getItemsByVendor(@PathVariable UUID vendorId) {
+    public ResponseEntity<List<ItemResponseDTO>> getItemsByVendor(@PathVariable UUID vendorId) {
         List<Item> items = itemService.getItemsByVendorId(vendorId);
-        return ResponseEntity.ok(items);
+        List<ItemResponseDTO> itemDTOs = items.stream()
+                .map(ItemResponseDTO::new)
+                .toList();
+        return ResponseEntity.ok(itemDTOs);
     }
 
     // Get an item by ID
     @GetMapping("/{id}")
-    public ResponseEntity<Item> getItemById(@PathVariable UUID id) {
-        Optional<Item> item = itemService.getItemById(id);
+    public ResponseEntity<ItemResponseDTO> getItemById(@PathVariable UUID id) {
+        Optional<ItemResponseDTO> item = itemService.getItemById(id);
         return item.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).build());
     }
 
     // Get an item by name
     @GetMapping("/name/{name}")
-    public ResponseEntity<Item> getItemByName(@PathVariable String name) {
-        Optional<Item> item = itemService.getItemByName(name);
+    public ResponseEntity<ItemResponseDTO> getItemByName(@PathVariable String name) {
+        Optional<ItemResponseDTO> item = itemService.getItemByName(name)
+                .map(ItemResponseDTO::new);
         return item.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).build());
     }
 
     // Get items by category
     @GetMapping("/category/{name}")
-    public ResponseEntity<List<Item>> getItemsByCategory(@PathVariable String name) {
+    public ResponseEntity<List<ItemResponseDTO>> getItemsByCategory(@PathVariable String name) {
         List<Item> items = itemService.getItemsByCategoryName(name);
-        return ResponseEntity.ok(items);
+        List<ItemResponseDTO> itemDTOs = items.stream()
+                .map(ItemResponseDTO::new)
+                .toList();
+        return ResponseEntity.ok(itemDTOs);
     }
 
     // Get items cheaper than a given price
     @GetMapping("/cheaper-than/{price}")
-    public ResponseEntity<List<Item>> getItemsCheaperThan(@PathVariable double price) {
-        List<Item> items = itemService.getItemsCheaperThan(price);
+    public ResponseEntity<List<ItemResponseDTO>> getItemsCheaperThan(@PathVariable double price) {
+        List<ItemResponseDTO> items = itemService.getItemsCheaperThan(price)
+                .stream()
+                .map(ItemResponseDTO::new)
+                .toList();
         return ResponseEntity.ok(items);
     }
 
     // Get items more expensive than a given price
     @GetMapping("/more-expensive-than/{price}")
-    public ResponseEntity<List<Item>> getItemsMoreExpensiveThan(@PathVariable double price) {
-        List<Item> items = itemService.getItemsMoreExpensiveThan(price);
+    public ResponseEntity<List<ItemResponseDTO>> getItemsMoreExpensiveThan(@PathVariable double price) {
+        List<ItemResponseDTO> items = itemService.getItemsMoreExpensiveThan(price)
+                .stream()
+                .map(ItemResponseDTO::new)
+                .toList();
         return ResponseEntity.ok(items);
     }
 
     // Search items by keyword in description
     @GetMapping("/search/{keyword}")
-    public ResponseEntity<List<Item>> searchItemsByKeyword(@PathVariable String keyword) {
-        List<Item> items = itemService.searchItemsByKeyword(keyword);
+    public ResponseEntity<List<ItemResponseDTO>> searchItemsByKeyword(@PathVariable String keyword) {
+        List<ItemResponseDTO> items = itemService.searchItemsByKeyword(keyword)
+                .stream()
+                .map(ItemResponseDTO::new)
+                .toList();
         return ResponseEntity.ok(items);
     }
 
     // Create a new item
     @PostMapping
-    public ResponseEntity<Item> createItem(@RequestBody ItemDTO item) {
+    public ResponseEntity<Item> createItem(@RequestBody ItemCreationDTO item) {
         Item createdItem = itemService.createItem(item);
         return ResponseEntity.status(HttpStatus.CREATED).body(createdItem);
     }
 
     // Update an existing item
     @PutMapping("/{id}")
-    public ResponseEntity<Item> updateItem(@PathVariable UUID id, @RequestBody ItemDTO updatedItem) {
+    public ResponseEntity<Item> updateItem(@PathVariable UUID id, @RequestBody ItemCreationDTO updatedItem) {
         Item item = itemService.updateItem(id, updatedItem);
         return ResponseEntity.ok(item);
     }

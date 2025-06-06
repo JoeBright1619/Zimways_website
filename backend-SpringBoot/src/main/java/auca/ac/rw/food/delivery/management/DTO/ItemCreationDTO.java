@@ -3,7 +3,7 @@ package auca.ac.rw.food.delivery.management.DTO;
 import java.util.List;
 import java.util.UUID;
 
-public class ItemDTO {
+public class ItemCreationDTO {
     private String name;
     private double price;
     private String description;
@@ -14,7 +14,7 @@ public class ItemDTO {
     private List<String> categoryNames;
 
     // Default constructor
-    public ItemDTO() {}
+    public ItemCreationDTO() {}
 
     // Getters
     public String getName() { return name; }

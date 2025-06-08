@@ -1,6 +1,7 @@
 package auca.ac.rw.food.delivery.management.controller;
 
 import auca.ac.rw.food.delivery.management.model.Customer;
+import auca.ac.rw.food.delivery.management.model.Order;
 import auca.ac.rw.food.delivery.management.service.CustomerService;
 import auca.ac.rw.food.delivery.management.service.PasswordResetService;
 import auca.ac.rw.food.delivery.management.service.TwoFactorAuthService;
@@ -50,7 +51,7 @@ public class CustomerController {
         } catch (DataIntegrityViolationException e) {
             // Handle unique constraint violation
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body("A customer with this email and phone already exists!");
+                    .body("A customer with this name and email already exists!");
         } catch (Exception e) {
             // Handle other exceptions
              e.printStackTrace();
@@ -62,9 +63,31 @@ public class CustomerController {
 
 
     @PostMapping("/login")
-    public Customer loginCustomer(@RequestBody Customer loginRequest) {
-        return customerService.loginCustomer(loginRequest.getEmail(), loginRequest.getPassword())
-        .orElseThrow(() -> new InvalidCredentialsException("Invalid email or password"));
+    public ResponseEntity<?> loginCustomer(@RequestBody Customer loginRequest) {
+        try {
+            // First find the customer by email
+            Optional<Customer> customerOpt = customerService.findByEmail(loginRequest.getEmail());
+            
+            if (!customerOpt.isPresent()) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", "No account found with this email"));
+            }
+
+            Customer customer = customerOpt.get();
+            customer.setFirebaseToken(loginRequest.getFirebaseToken());
+            
+            Optional<Customer> verifiedCustomer = customerService.verifyAndLoginCustomer(customer);
+            if (verifiedCustomer.isPresent()) {
+                return ResponseEntity.ok(verifiedCustomer.get());
+            } else {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", "Invalid credentials"));
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of("error", "Login failed: " + e.getMessage()));
+        }
     }
 
     @PutMapping("{id}")
@@ -81,8 +104,55 @@ public ResponseEntity<?> updateCustomer(@PathVariable UUID id, @RequestBody Cust
 }
 
     @DeleteMapping("/{id}")
-    public void deleteCustomer(@PathVariable UUID id) {
-        customerService.deleteCustomer(id);
+    public ResponseEntity<?> deleteCustomer(@PathVariable UUID id) {
+        try {
+            // Check if customer exists
+            Optional<Customer> customerOpt = customerService.getCustomerById(id);
+            if (!customerOpt.isPresent()) {
+                return ResponseEntity.notFound().build();
+            }
+
+            Customer customer = customerOpt.get();
+            
+            // Clear relationships manually to avoid any potential issues
+            if (customer.getOrders() != null) {
+                for (Order order : customer.getOrders()) {
+                    // Clear payment relationship if exists
+                    if (order.getPayment() != null) {
+                        order.getPayment().setOrder(null);
+                        order.setPayment(null);
+                    }
+                    // Clear cart relationship if exists
+                    if (order.getCart() != null) {
+                        order.getCart().setOrder(null);
+                        order.setCart(null);
+                    }
+                }
+                customer.getOrders().clear();
+            }
+
+            // Clear cart relationship if exists
+            if (customer.getCart() != null) {
+                if (customer.getCart().getCartItems() != null) {
+                    customer.getCart().getCartItems().clear();
+                }
+                if (customer.getCart().getOrder() != null) {
+                    customer.getCart().getOrder().setCart(null);
+                    customer.getCart().setOrder(null);
+                }
+                customer.setCart(null);
+            }
+
+            // Now delete the customer
+            customerService.deleteCustomer(id);
+            
+            return ResponseEntity.ok()
+                .body(Map.of("message", "Customer and related data deleted successfully"));
+        } catch (Exception e) {
+            e.printStackTrace(); // Log the full stack trace
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of("error", "Failed to delete customer: " + e.getMessage()));
+        }
     }
 
     @PostMapping("/forgot-password")

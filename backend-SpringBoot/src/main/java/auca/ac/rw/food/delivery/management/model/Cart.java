@@ -1,6 +1,7 @@
 package auca.ac.rw.food.delivery.management.model;
 
 import jakarta.persistence.*;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -22,6 +23,10 @@ public class Cart {
     @OneToMany(mappedBy = "cart", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<CartItem> cartItems;
 
+    @OneToOne(mappedBy = "cart")
+    @JsonIgnore
+    private Order order;
+
     public Cart() {}
 
     public Cart(Customer customer) {
@@ -36,4 +41,27 @@ public class Cart {
 
     public void setCustomer(Customer customer) { this.customer = customer; }
     public void setCartItems(List<CartItem> cartItems) { this.cartItems = cartItems; }
+
+    @PreRemove
+    private void preRemove() {
+        // Detach from order before removal
+        if (order != null) {
+            order.setCart(null);
+            this.order = null;
+        }
+        // Detach from customer before removal
+        if (customer != null) {
+            customer.setCart(null);
+            this.customer = null;
+        }
+    }
+
+    // Add getter and setter for order
+    public Order getOrder() {
+        return order;
+    }
+
+    public void setOrder(Order order) {
+        this.order = order;
+    }
 }

@@ -61,4 +61,15 @@ public class Payment {
         return String.format("Payment{id=%s, amount=%.2f, method=%s, status=%s}", 
                 id, amount, paymentMethod, status);
     }
+
+    @PreRemove
+    private void preRemove() {
+        // Detach from order before removal
+        if (order != null) {
+            if (order.getPayment() != null) {
+                order.setPayment(null);
+            }
+            this.order = null;
+        }
+    }
 }

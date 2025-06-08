@@ -28,7 +28,11 @@ public class CustomerService {
         return customerRepository.findById(id);
     }
 
-    public Optional<Customer> loginCustomer(String email, String password) {
+    //public Optional<Customer> loginCustomer(String email, String firebaseToken) {
+    //    return customerRepository.findByEmailAndFirebaseToken(email, firebaseToken);
+    //}
+
+    public Optional<Customer> loginCustomerWithPassword(String email, String password) {
         return customerRepository.findByEmailAndPassword(email, password);
     }
 
@@ -64,5 +68,15 @@ public class CustomerService {
 
     public void deleteCustomer(UUID id) {
         customerRepository.deleteById(id);
+    }
+
+    public Optional<Customer> findByEmail(String email) {
+        return customerRepository.findByEmail(email);
+    }
+
+    public Optional<Customer> verifyAndLoginCustomer(Customer customer) {
+        // Here you would implement Firebase token verification
+        // For now, we'll just check if the user exists
+        return customerRepository.findByEmail(customer.getEmail());
     }
 }

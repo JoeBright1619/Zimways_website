@@ -2,15 +2,18 @@ package auca.ac.rw.food.delivery.management.model;
 
 import jakarta.persistence.*;
 import java.util.UUID;
-
+import java.util.HashSet;
+import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-
 
 @Entity
 @Table(
     name = "customer",
-    uniqueConstraints = @UniqueConstraint(columnNames = {"email", "name"})
+    uniqueConstraints = {
+        @UniqueConstraint(columnNames = {"email", "name"}),
+        @UniqueConstraint(columnNames = {"firebaseUid"})
+    }
 )
 public class Customer {
     @Id
@@ -31,27 +34,43 @@ public class Customer {
 
     private String address;
 
+    @Column(name = "firebase_uid", nullable = false, unique = true)
+    private String firebaseUid;
+
+    @Column(name = "profile_url")
+    private String profileUrl;
+
+    @Transient // This field won't be persisted as it's only used for authentication
+    private String firebaseToken;
+
     @Column(name = "tfa_secret")
     private String tfaSecret;
 
     @Column(name = "tfa_enabled", nullable = false)
     private boolean tfaEnabled = false;
 
-    @OneToOne(mappedBy = "customer", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "customer", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore
+    private Set<Order> orders = new HashSet<>();
+
+    @OneToOne(mappedBy = "customer", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonIgnore
     private Cart cart;
 
     public Customer() {
         this.tfaEnabled = false;
+        this.orders = new HashSet<>();
     }
 
-    public Customer(String name, String email, String phone, String address, String password) {
+    public Customer(String name, String email, String phone, String address, String password, String firebaseUid) {
         this.name = name;
         this.email = email;
         this.phone = phone;
         this.address = address;
         this.password = password;
+        this.firebaseUid = firebaseUid; // This is required and will be stored
         this.tfaEnabled = false;
+        this.orders = new HashSet<>();
     }
 
     public UUID getId() {        return id;    }
@@ -93,4 +112,40 @@ public class Customer {
     public void setAddress(String address){    this.address = address;    }
     public void setPassword(String password) {        this.password = password;    }
     public void setCart(Cart cart) { this.cart = cart; }
+
+    public String getFirebaseUid() {
+        return firebaseUid;
+    }
+
+    public void setFirebaseUid(String firebaseUid) {
+        if (firebaseUid == null || firebaseUid.trim().isEmpty()) {
+            throw new IllegalArgumentException("Firebase UID cannot be null or empty");
+        }
+        this.firebaseUid = firebaseUid;
+    }
+
+    // Token is transient - only used for authentication, not stored
+    public String getFirebaseToken() {
+        return firebaseToken;
+    }
+
+    public void setFirebaseToken(String firebaseToken) {
+        this.firebaseToken = firebaseToken;
+    }
+
+    public Set<Order> getOrders() {
+        return orders;
+    }
+
+    public void setOrders(Set<Order> orders) {
+        this.orders = orders;
+    }
+
+    public String getProfileUrl() {
+        return profileUrl;
+    }
+
+    public void setProfileUrl(String profileUrl) {
+        this.profileUrl = profileUrl;
+    }
 }

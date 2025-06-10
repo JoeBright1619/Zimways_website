@@ -1,5 +1,7 @@
 package auca.ac.rw.food.delivery.management.DTO;
 
+import java.util.List;
+
 import auca.ac.rw.food.delivery.management.model.enums.VendorStatus;
 import auca.ac.rw.food.delivery.management.model.enums.VendorType;
 

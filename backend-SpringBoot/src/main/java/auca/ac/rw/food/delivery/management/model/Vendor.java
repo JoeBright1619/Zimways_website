@@ -41,7 +41,7 @@ public class Vendor {
     private double averageRating = 0.0;
     private int totalRatings = 0;
 
-    @Enumerated(EnumType.STRING)
+    @Enumerated(EnumType.STRING) 
     private VendorType vendorType;
 
     @Enumerated(EnumType.STRING) 

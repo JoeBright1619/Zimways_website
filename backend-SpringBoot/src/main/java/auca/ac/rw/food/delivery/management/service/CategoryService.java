@@ -1,12 +1,12 @@
 package auca.ac.rw.food.delivery.management.service;
 
-
 import auca.ac.rw.food.delivery.management.model.Category;
 import auca.ac.rw.food.delivery.management.model.Vendor;
 import auca.ac.rw.food.delivery.management.model.Item;
 import auca.ac.rw.food.delivery.management.repository.CategoryRepository;
 import auca.ac.rw.food.delivery.management.model.enums.ItemCategory;
 import auca.ac.rw.food.delivery.management.service.ItemService;
+import auca.ac.rw.food.delivery.management.service.VendorService;
 
 import org.springframework.stereotype.Service;
 
@@ -20,10 +20,14 @@ import java.util.stream.Collectors;
 public class CategoryService {
     private final CategoryRepository categoryRepository;
     private final ItemService itemService;
+    private final VendorService vendorService;
 
-    public CategoryService(CategoryRepository categoryRepository, ItemService itemService) {
+    public CategoryService(CategoryRepository categoryRepository, 
+                         ItemService itemService,
+                         VendorService vendorService) {
         this.categoryRepository = categoryRepository;
         this.itemService = itemService;
+        this.vendorService = vendorService;
     }
 
     public Optional<Category> getCategoryByName(ItemCategory name){
@@ -39,30 +43,45 @@ public class CategoryService {
     }
 
     public List<ItemCategory> getCategoriesByVendorId(UUID vendorId) {
-    List<Item> items = itemService.getItemsByVendorId(vendorId);
+        List<Item> items = itemService.getItemsByVendorId(vendorId);
 
-    if (items.isEmpty()) {
-        return Collections.emptyList(); // Return an empty list if vendor has no items
+        if (items.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        return items.stream()
+            .flatMap(item -> item.getCategories().stream())
+            .map(Category::getName)
+            .distinct()
+            .collect(Collectors.toList());
     }
 
-    return items.stream()
-        .flatMap(item -> item.getCategories().stream()) // get all categories from all items
-        .map(Category::getName) // get the enum name (ItemCategory)
-        .distinct() // avoid duplicates
-        .collect(Collectors.toList()); // return the unique list
-}
+    public List<Item> getItemsByCategory(ItemCategory categoryName) {
+        Optional<Category> category = categoryRepository.findByName(categoryName);
+        if (category.isEmpty()) {
+            return Collections.emptyList();
+        }
+        return category.get().getItems();
+    }
 
+    public List<Vendor> getVendorsByCategory(ItemCategory categoryName) {
+        Optional<Category> category = categoryRepository.findByName(categoryName);
+        if (category.isEmpty()) {
+            return Collections.emptyList();
+        }
+        return category.get().getVendors().stream().collect(Collectors.toList());
+    }
 
     public Category saveCategory(Category category){
-
         Optional<Category> existingCategory = categoryRepository
-    .findByName(category.getName());
+            .findByName(category.getName());
 
-    if (existingCategory.isPresent()) {
-    throw new IllegalStateException("Category with the same name already exist.");
-    }
+        if (existingCategory.isPresent()) {
+            throw new IllegalStateException("Category with the same name already exist.");
+        }
         return categoryRepository.save(category);
     }
+
     public void deleteCategoryByName(ItemCategory name){
         categoryRepository.deleteByName(name);
     }

@@ -1,15 +1,19 @@
 package auca.ac.rw.food.delivery.management.service;
 
 import auca.ac.rw.food.delivery.management.model.Vendor;
+import auca.ac.rw.food.delivery.management.model.Category;
 import auca.ac.rw.food.delivery.management.model.enums.VendorStatus;
 import auca.ac.rw.food.delivery.management.repository.VendorRepository;
+import auca.ac.rw.food.delivery.management.repository.CategoryRepository;
 import auca.ac.rw.food.delivery.management.DTO.VendorDTO;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
+import java.util.HashSet;
 
 import javax.management.relation.RelationNotFoundException;
 
@@ -17,10 +21,14 @@ import javax.management.relation.RelationNotFoundException;
 public class VendorService {
     private final VendorRepository vendorRepository;
     private final PasswordEncoder passwordEncoder;
+    private final CategoryRepository categoryRepository;
 
-    public VendorService(VendorRepository vendorRepository, PasswordEncoder passwordEncoder) {
+    public VendorService(VendorRepository vendorRepository, 
+                        PasswordEncoder passwordEncoder,
+                        CategoryRepository categoryRepository) {
         this.vendorRepository = vendorRepository;
         this.passwordEncoder = passwordEncoder;
+        this.categoryRepository = categoryRepository;
     }
 
     // ✅ Get all vendors
@@ -39,16 +47,47 @@ public class VendorService {
     }
 
     // ✅ Create a new vendor
-    public Vendor createVendor(Vendor vendor) {
+    public Vendor createVendor(VendorDTO vendorDTO) {
         // Check if vendor with the same name and address exists
         Optional<Vendor> existingVendor = vendorRepository
-                .findByNameAndLocation(vendor.getName(), vendor.getLocation());
+                .findByNameAndLocation(vendorDTO.getName(), vendorDTO.getLocation());
 
         if (existingVendor.isPresent()) {
             throw new IllegalStateException("Vendor with the same name and address already exists.");
         }
 
-        // Proceed to save if no duplicate
+        // Create new vendor
+        Vendor vendor = new Vendor();
+        vendor.setName(vendorDTO.getName());
+        vendor.setLocation(vendorDTO.getLocation());
+        vendor.setPhone(vendorDTO.getPhone());
+        vendor.setEmail(vendorDTO.getEmail());
+        vendor.setDescription(vendorDTO.getDescription());
+        vendor.setImageUrl(vendorDTO.getImageUrl());
+        vendor.setStatus(vendorDTO.getStatus());
+        vendor.setPassword(passwordEncoder.encode(vendorDTO.getPassword()));
+        vendor.setVendorId(vendorDTO.getVendorId());
+
+        // Handle categories if provided
+        if (vendorDTO.getCategoryNames() != null && !vendorDTO.getCategoryNames().isEmpty()) {
+            Set<Category> categories = categoryRepository.findByNameIn(vendorDTO.getCategoryNames());
+            
+            // Check if all categories were found
+            if (categories.size() != vendorDTO.getCategoryNames().size()) {
+                List<String> foundNames = categories.stream()
+                    .map(category -> category.getName().toString())
+                    .toList();
+                List<String> missing = vendorDTO.getCategoryNames().stream()
+                    .filter(name -> !foundNames.contains(name))
+                    .toList();
+                throw new IllegalArgumentException("Categories not found: " + String.join(", ", missing));
+            }
+
+            vendor.setCategories(categories);
+        } else {
+            vendor.setCategories(new HashSet<>());
+        }
+
         return vendorRepository.save(vendor);
     }
 
@@ -68,9 +107,6 @@ public class VendorService {
                     if (updatedVendor.getEmail() != null) {
                         existingVendor.setEmail(updatedVendor.getEmail());
                     }
-                    if (updatedVendor.getVendorType() != null) {
-                        existingVendor.setVendorType(updatedVendor.getVendorType());
-                    }
                     if (updatedVendor.getDescription() != null) {
                         existingVendor.setDescription(updatedVendor.getDescription());
                     }
@@ -80,6 +116,15 @@ public class VendorService {
                     if (updatedVendor.getStatus() != null) {
                         existingVendor.setStatus(updatedVendor.getStatus());
                     }
+                    
+                    // Handle category update if provided
+                    if (updatedVendor.getCategoryNames() != null && !updatedVendor.getCategoryNames().isEmpty()) {
+                        Set<Category> categories = categoryRepository.findByNameIn(updatedVendor.getCategoryNames());
+                        if (!categories.isEmpty()) {
+                            existingVendor.setCategories(categories);
+                        }
+                    }
+
                     return vendorRepository.save(existingVendor);
                 })
                 .orElseThrow(() -> new RuntimeException("Vendor not found"));

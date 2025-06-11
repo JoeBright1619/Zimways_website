@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 @Service
@@ -93,7 +94,7 @@ public class ItemService {
         }
             
         // Fetch categories
-        List<Category> categories = categoryRepository.findByNameIn(item.getCategoryNames());
+        Set<Category> categories = categoryRepository.findByNameIn(item.getCategoryNames());
 
         // Check if all categories were found
         if (categories.size() != item.getCategoryNames().size()) {
@@ -153,7 +154,7 @@ public class ItemService {
 
                     // Handle category update if provided
                     if (updatedItem.getCategoryNames() != null && !updatedItem.getCategoryNames().isEmpty()) {
-                        List<Category> categories = categoryRepository.findByNameIn(updatedItem.getCategoryNames());
+                        Set<Category> categories = categoryRepository.findByNameIn(updatedItem.getCategoryNames());
                         if (!categories.isEmpty()) {
                             existingItem.setCategories(categories);
                         }

@@ -14,6 +14,9 @@ public class VendorDTO {
     private String description;
     private String imageUrl;
     private VendorStatus status;
+    private String password;
+    private String vendorId;
+    private List<String> categoryNames;
 
     // Constructors
     public VendorDTO() {}
@@ -55,4 +58,13 @@ public class VendorDTO {
 
     public VendorStatus getStatus() { return status; }
     public void setStatus(VendorStatus status) { this.status = status; }
+
+    public String getPassword() { return password; }
+    public void setPassword(String password) { this.password = password; }
+
+    public String getVendorId() { return vendorId; }
+    public void setVendorId(String vendorId) { this.vendorId = vendorId; }
+
+    public List<String> getCategoryNames() { return categoryNames; }
+    public void setCategoryNames(List<String> categoryNames) { this.categoryNames = categoryNames; }
 }

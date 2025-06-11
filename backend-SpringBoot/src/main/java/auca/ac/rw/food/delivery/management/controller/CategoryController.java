@@ -2,12 +2,15 @@ package auca.ac.rw.food.delivery.management.controller;
 
 import auca.ac.rw.food.delivery.management.model.Category;
 import auca.ac.rw.food.delivery.management.service.CategoryService;
+import auca.ac.rw.food.delivery.management.model.Item;
+import auca.ac.rw.food.delivery.management.model.Vendor;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import auca.ac.rw.food.delivery.management.model.enums.ItemCategory;
+import auca.ac.rw.food.delivery.management.model.enums.CategoryType;
 
 import java.util.Optional;
 import java.util.UUID;
@@ -42,6 +45,35 @@ public ResponseEntity<Category> getCategoryByName(@PathVariable String name) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
     }
 }
+
+    // Get items by category
+    @GetMapping("/{name}/items")
+    public ResponseEntity<List<Item>> getItemsByCategory(@PathVariable String name) {
+        try {
+            ItemCategory categoryEnum = ItemCategory.valueOf(name.toUpperCase());
+            List<Item> items = categoryService.getItemsByCategory(categoryEnum);
+            return items.isEmpty()
+                ? ResponseEntity.status(HttpStatus.NOT_FOUND).build()
+                : ResponseEntity.ok(items);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
+        }
+    }
+
+    // Get vendors by category
+    @GetMapping("/{name}/vendors")
+    public ResponseEntity<List<Vendor>> getVendorsByCategory(@PathVariable String name) {
+        try {
+            ItemCategory categoryEnum = ItemCategory.valueOf(name.toUpperCase());
+            List<Vendor> vendors = categoryService.getVendorsByCategory(categoryEnum);
+            return vendors.isEmpty()
+                ? ResponseEntity.status(HttpStatus.NOT_FOUND).build()
+                : ResponseEntity.ok(vendors);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
+        }
+    }
+
     @GetMapping("/vendors/{vendorId}/categories")
 public ResponseEntity<?> getVendorCategories(@PathVariable UUID vendorId) {
     // logic here

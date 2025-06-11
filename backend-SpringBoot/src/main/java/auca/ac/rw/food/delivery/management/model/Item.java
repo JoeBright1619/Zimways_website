@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 
 import java.util.List;
 import java.util.UUID;
+import java.util.Set;
+import java.util.HashSet;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
@@ -54,11 +56,11 @@ public class Item {
         inverseJoinColumns = @JoinColumn(name = "category_id")
     )
     @JsonManagedReference
-    private List<Category> categories;
+    private Set<Category> categories = new HashSet<>();
     // Constructors
     public Item() {}
 
-    public Item(String name, double price, List<Category> categories, String description, Vendor vendor) {
+    public Item(String name, double price, Set<Category> categories, String description, Vendor vendor) {
         this.name = name;
         this.price = price;
         this.categories = categories;
@@ -78,12 +80,12 @@ public class Item {
     public int getReviewCount() { return reviewCount; }
     public double getDiscountPercentage() { return discountPercentage; }
     public boolean isAvailable() { return isAvailable; }
-    public List<Category> getCategories() { return categories; }
+    public Set<Category> getCategories() { return categories; }
     public Vendor getVendor() { return vendor; }
 
     public void setName(String name) { this.name = name; }
     public void setPrice(double price) { this.price = price; }
-    public void setCategories(List<Category> categories) { this.categories = categories; }
+    public void setCategories(Set<Category> categories) { this.categories = categories; }
     public void setVendor(Vendor vendor) { this.vendor = vendor; }
     public void setDescription(String description) { this.description = description; }
     public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }

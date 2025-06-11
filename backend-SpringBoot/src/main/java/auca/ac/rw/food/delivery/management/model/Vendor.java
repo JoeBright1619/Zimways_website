@@ -3,7 +3,9 @@ package auca.ac.rw.food.delivery.management.model;
 import auca.ac.rw.food.delivery.management.model.enums.*;
 import jakarta.persistence.*;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
@@ -44,12 +46,19 @@ public class Vendor {
     @Enumerated(EnumType.STRING) 
     private VendorType vendorType;
 
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+        name = "vendor_category",
+        joinColumns = @JoinColumn(name = "vendor_id"),
+        inverseJoinColumns = @JoinColumn(name = "category_id")
+    )
+    private Set<Category> categories = new HashSet<>();
+    
     @Enumerated(EnumType.STRING) 
     private VendorStatus status = VendorStatus.OPEN; // or ACTIVE, whatever fits your logic
 
     @OneToMany(mappedBy = "vendor", cascade = CascadeType.ALL)
     private List<Item> items = new ArrayList<>();
-    
 
     // Constructors
     public Vendor() {}
@@ -81,6 +90,7 @@ public class Vendor {
     public String getPassword() { return password; }
     public String getDescription() { return description; }
     public String getImageUrl() { return imageUrl; }
+    public Set<Category> getCategories() { return categories; }
 
     public void setId(UUID id) { this.id = id; }
     public void setName(String name) { this.name = name; }
@@ -96,6 +106,7 @@ public class Vendor {
     public void setTotalRatings(int totalRatings) { this.totalRatings = totalRatings; }
     public void setVendorId(String vendorId) { this.vendorId = vendorId; }
     public void setPassword(String password) { this.password = password; }
+    public void setCategories(Set<Category> categories) { this.categories = categories; }
 
     // Helper method to link menu items
     

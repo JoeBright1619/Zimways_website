@@ -1,6 +1,15 @@
 package auca.ac.rw.food.delivery.management.model.enums;
 
 public enum ItemCategory {
+    RESTAURANTS,
+    GROCERIES,
+    PHARMACIES,
+    BEAUTY_AND_SKINCARE,
+    ELECTRONICS,
+    HOME_AND_GARDEN,
+    FASHION,
+    PETS,
+    CLOTHING,
     MAIN_COURSE,
     SIDE_DISH,
     FAST_FOOD,

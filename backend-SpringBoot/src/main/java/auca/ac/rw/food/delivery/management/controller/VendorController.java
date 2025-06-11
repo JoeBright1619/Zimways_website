@@ -51,7 +51,7 @@ public class VendorController {
     }
 
     @PostMapping
-    public ResponseEntity<Vendor> createVendor(@RequestBody Vendor vendor) {
+    public ResponseEntity<Vendor> createVendor(@RequestBody VendorDTO vendor) {
         return ResponseEntity.ok(vendorService.createVendor(vendor));
     }
 

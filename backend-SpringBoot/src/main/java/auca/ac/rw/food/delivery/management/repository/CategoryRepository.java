@@ -6,6 +6,7 @@ import auca.ac.rw.food.delivery.management.model.enums.ItemCategory;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import org.springframework.stereotype.Repository;
 
@@ -13,7 +14,7 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface CategoryRepository extends JpaRepository<Category, UUID> {
    Optional<Category> findByName(ItemCategory name);  // ✅ Find category by name
-   List<Category> findByNameIn(List<String> names); // ✅ Find categories by a list of names
+   Set<Category> findByNameIn(List<String> names); // ✅ Find categories by a list of names
    List<Category> findAll();
    Category save(Category category);
 

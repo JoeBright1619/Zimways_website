@@ -121,7 +121,8 @@ public class VendorService {
                     if (updatedVendor.getCategoryNames() != null && !updatedVendor.getCategoryNames().isEmpty()) {
                         Set<Category> categories = categoryRepository.findByNameIn(updatedVendor.getCategoryNames());
                         if (!categories.isEmpty()) {
-                            existingVendor.setCategories(categories);
+                            existingVendor.getCategories().addAll(categories);
+
                         }
                     }
 

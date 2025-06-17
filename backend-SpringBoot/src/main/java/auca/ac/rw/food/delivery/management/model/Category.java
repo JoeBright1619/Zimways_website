@@ -21,18 +21,19 @@ public class Category {
     @Column(nullable = false, unique = true)
     private ItemCategory name;
 
+    private String icon;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private CategoryType type = CategoryType.ITEM;  // Default to ITEM for backward compatibility
+    private CategoryType type = CategoryType.PRODUCT;  // Default to ITEM for backward compatibility
 
     // Many Categories can have many Items
-    @ManyToMany(mappedBy = "categories")  // mappedBy points to the field in the Item class
-    @JsonBackReference
-    private List<Item> items;  // This is the inverse side of the relationship
-
-    // Many Categories can have many Vendors
     @ManyToMany(mappedBy = "categories")
-    @JsonBackReference
+    @JsonBackReference(value = "category-items")
+    private Set<Item> items = new HashSet<>();
+
+    @ManyToMany(mappedBy = "categories")
+    @JsonBackReference(value = "category-vendors")
     private Set<Vendor> vendors = new HashSet<>();
 
     // Constructors
@@ -50,12 +51,15 @@ public class Category {
     // Getters and Setters
     public UUID getId() { return id; }
     public ItemCategory getName() { return name; }
-    public List<Item> getItems() { return items; }
+    public Set<Item> getItems() { return items; }
+    public String getIcon() { return icon; }
     public Set<Vendor> getVendors() { return vendors; }
     public CategoryType getType() { return type; }
 
+
     public void setName(ItemCategory name) { this.name = name; }
-    public void setItems(List<Item> items) { this.items = items; }
+    public void setItems(Set<Item> items) { this.items = items; }
+    public void setIcon(String icon) { this.icon = icon; }
     public void setVendors(Set<Vendor> vendors) { this.vendors = vendors; }
     public void setType(CategoryType type) { this.type = type; }
 }

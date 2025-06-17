@@ -7,6 +7,7 @@ import java.util.UUID;
 import java.util.Set;
 import java.util.HashSet;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 
@@ -55,7 +56,7 @@ public class Item {
         joinColumns = @JoinColumn(name = "item_id"),
         inverseJoinColumns = @JoinColumn(name = "category_id")
     )
-    @JsonManagedReference
+    @JsonBackReference(value = "category-items")
     private Set<Category> categories = new HashSet<>();
     // Constructors
     public Item() {}

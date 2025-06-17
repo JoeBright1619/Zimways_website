@@ -52,6 +52,7 @@ public class Vendor {
         joinColumns = @JoinColumn(name = "vendor_id"),
         inverseJoinColumns = @JoinColumn(name = "category_id")
     )
+    @JsonBackReference(value = "category-vendors")
     private Set<Category> categories = new HashSet<>();
     
     @Enumerated(EnumType.STRING) 

@@ -11,9 +11,13 @@ import auca.ac.rw.food.delivery.management.service.VendorService;
 import org.springframework.stereotype.Service;
 
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
+
 import java.util.stream.Collectors;
 
 @Service
@@ -56,10 +60,10 @@ public class CategoryService {
             .collect(Collectors.toList());
     }
 
-    public List<Item> getItemsByCategory(ItemCategory categoryName) {
+    public Set<Item> getItemsByCategory(ItemCategory categoryName) {
         Optional<Category> category = categoryRepository.findByName(categoryName);
         if (category.isEmpty()) {
-            return Collections.emptyList();
+            return new HashSet<>();
         }
         return category.get().getItems();
     }

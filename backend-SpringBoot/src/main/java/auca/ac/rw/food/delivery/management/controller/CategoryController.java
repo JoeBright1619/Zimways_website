@@ -14,7 +14,9 @@ import auca.ac.rw.food.delivery.management.model.enums.CategoryType;
 
 import java.util.Optional;
 import java.util.UUID;
+import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 
 @RestController
 @RequestMapping("/api/categories")
@@ -48,13 +50,11 @@ public ResponseEntity<Category> getCategoryByName(@PathVariable String name) {
 
     // Get items by category
     @GetMapping("/{name}/items")
-    public ResponseEntity<List<Item>> getItemsByCategory(@PathVariable String name) {
+    public ResponseEntity<Set<Item>> getItemsByCategory(@PathVariable String name) {
         try {
             ItemCategory categoryEnum = ItemCategory.valueOf(name.toUpperCase());
-            List<Item> items = categoryService.getItemsByCategory(categoryEnum);
-            return items.isEmpty()
-                ? ResponseEntity.status(HttpStatus.NOT_FOUND).build()
-                : ResponseEntity.ok(items);
+            Set<Item> items = categoryService.getItemsByCategory(categoryEnum);
+            return ResponseEntity.ok(items);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
         }
@@ -66,9 +66,7 @@ public ResponseEntity<Category> getCategoryByName(@PathVariable String name) {
         try {
             ItemCategory categoryEnum = ItemCategory.valueOf(name.toUpperCase());
             List<Vendor> vendors = categoryService.getVendorsByCategory(categoryEnum);
-            return vendors.isEmpty()
-                ? ResponseEntity.status(HttpStatus.NOT_FOUND).build()
-                : ResponseEntity.ok(vendors);
+            return  ResponseEntity.ok(vendors);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
         }

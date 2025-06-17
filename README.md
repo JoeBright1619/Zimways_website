@@ -1,11 +1,11 @@
 # ZimWays Food Delivery
 
-ZimWays Food Delivery is a website for ordering food online. Customers can browse the menu, add items to their cart, and place orders.
-
+**ZimWays** is a web-based product delivery platform designed to simplify online shopping and last-mile delivery.  
+Customers can seamlessly browse products, manage their cart, place orders, and have items delivered directly to their doorstep.
 
 ## 🔒 License
 
-This project is proprietary and all rights are reserved by **Kirenga Joe Bright Collins**.   
-You may not copy, distribute, or modify any part of this codebase without explicit permission.
+This project is **proprietary software**. All rights are reserved by **Kirenga Joe Bright Collins**.  
+Unauthorized use, reproduction, modification, or distribution of any part of this codebase is strictly prohibited without prior written consent.
 
-© 2025 Bright Collins. All rights reserved.
+© 2025 Kirenga Joe Bright Collins. All rights reserved.

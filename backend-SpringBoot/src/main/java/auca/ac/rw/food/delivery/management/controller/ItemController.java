@@ -93,14 +93,15 @@ public class ItemController {
     }
 
     // Search items by keyword in description
-    @GetMapping("/search/{keyword}")
-    public ResponseEntity<List<ItemResponseDTO>> searchItemsByKeyword(@PathVariable String keyword) {
-        List<ItemResponseDTO> items = itemService.searchItemsByKeyword(keyword)
-                .stream()
-                .map(ItemResponseDTO::new)
-                .toList();
-        return ResponseEntity.ok(items);
-    }
+@GetMapping("/search")
+public ResponseEntity<List<ItemResponseDTO>> searchItems(@RequestParam(defaultValue = "") String keyword) {
+    List<ItemResponseDTO> items = itemService.searchItemsByKeyword(keyword)
+            .stream()
+            .map(ItemResponseDTO::new)
+            .toList();
+    return ResponseEntity.ok(items);
+}
+
 
     // Create a new item
     @PostMapping

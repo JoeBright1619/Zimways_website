@@ -7,6 +7,7 @@ import auca.ac.rw.food.delivery.management.repository.CategoryRepository;
 import auca.ac.rw.food.delivery.management.model.enums.ItemCategory;
 import auca.ac.rw.food.delivery.management.service.ItemService;
 import auca.ac.rw.food.delivery.management.service.VendorService;
+import auca.ac.rw.food.delivery.management.model.enums.CategoryType;
 
 import org.springframework.stereotype.Service;
 
@@ -74,6 +75,10 @@ public class CategoryService {
             return Collections.emptyList();
         }
         return category.get().getVendors().stream().collect(Collectors.toList());
+    }
+
+    public List<Category> getCategoriesByType(CategoryType type) {
+        return categoryRepository.findByType(type);
     }
 
     public Category saveCategory(Category category){

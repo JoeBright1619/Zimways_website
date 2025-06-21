@@ -90,6 +90,15 @@ public ResponseEntity<?> getVendorCategories(@PathVariable UUID vendorId) {
         return ResponseEntity.status(HttpStatus.CREATED).body(savedCategory);
     }
 
+    @GetMapping("/by-type/{type}")
+    public ResponseEntity<List<Category>> getCategoriesByType(@PathVariable String type) {
+        List<Category> categories = categoryService.getCategoriesByType(CategoryType.valueOf(type.toUpperCase()));
+        if (categories.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
+        return ResponseEntity.ok(categories);
+    }
+
     // Delete category by name
     @DeleteMapping("/{name}")
     public ResponseEntity<Void> deleteCategoryByName(@PathVariable String name) {

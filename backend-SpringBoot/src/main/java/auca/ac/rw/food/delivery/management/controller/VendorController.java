@@ -36,9 +36,11 @@ public class VendorController {
     }
 
     @GetMapping("/search")
-    public List<Vendor> searchVendorsByName(@RequestParam String keyword) {
-        return vendorService.searchVendorsByName(keyword);
-    }
+public ResponseEntity<List<Vendor>> searchVendorsByName(@RequestParam(defaultValue = "") String keyword) {
+    List<Vendor> vendors = vendorService.searchVendorsByName(keyword);
+    return ResponseEntity.ok(vendors);
+}
+
 
     @GetMapping("/status/{status}")
     public List<Vendor> getVendorsByStatus(@PathVariable VendorStatus status) {

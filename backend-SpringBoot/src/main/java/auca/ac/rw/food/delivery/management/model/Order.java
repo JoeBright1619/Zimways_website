@@ -6,6 +6,8 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.ArrayList;
 import java.util.UUID;
 
 @Entity
@@ -44,6 +46,16 @@ public class Order {
     @OneToOne(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonIgnore
     private Payment payment;
+
+    @ElementCollection(fetch = FetchType.EAGER)           // snapshot list
+    @CollectionTable(name = "order_vendor_summaries", joinColumns = @JoinColumn(name = "order_id"))
+    private List<VendorSummary> vendors = new ArrayList<>();
+
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "order_item_summaries", joinColumns = @JoinColumn(name = "order_id"))
+    private List<ItemSummary> items = new ArrayList<>();
+
+    
 
     // Constructors
     public Order() {
